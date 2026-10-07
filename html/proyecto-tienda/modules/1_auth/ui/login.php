@@ -89,14 +89,14 @@ if (!empty($_SESSION['id_usuario'])) {
                 <!-- Campo: Correo electrónico -->
                 <div class="mb-3">
                     <label for="campo-correo" class="form-label fw-semibold">
-                        Correo electrónico
+                        Usuario / Correo electrónico
                     </label>
                     <input
                         type="email"
                         id="campo-correo"
                         name="correo"
                         class="form-control"
-                        placeholder="ejemplo@correo.com"
+                        placeholder="usuario@correo.com"
                         maxlength="150"
                         required
                         aria-required="true"
