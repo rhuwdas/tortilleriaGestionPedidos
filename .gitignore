@@ -1,0 +1,54 @@
+# =============================================================
+# .gitignore - Tortillería Gestión de Pedidos
+# Excluye del repositorio archivos sensibles, temporales y
+# generados automáticamente que no deben versionarse.
+# =============================================================
+
+# --- Archivos de entorno y configuración sensible ---
+# El archivo .env contiene credenciales de BD y NO debe subirse al repo
+.env
+.env.local
+.env.*.local
+*.env
+
+# --- Dependencias de PHP (si se usara Composer en el futuro) ---
+/vendor/
+
+# --- Volúmenes y datos locales de Docker ---
+# Los datos de la BD se almacenan en un volumen Docker, no en Git
+/db_data/
+
+# --- Volcados y scripts SQL generados localmente ---
+*.sql
+*.sql.gz
+
+# --- Archivos del sistema operativo ---
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- Editores e IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# --- Logs y archivos temporales ---
+*.log
+/logs/
+/tmp/
+/temp/
+
+# --- Caché de PHP y archivos compilados ---
+*.cache
+/cache/
+
+# --- Archivos de configuración local sobreescritos ---
+config.local.php
+config.local.js

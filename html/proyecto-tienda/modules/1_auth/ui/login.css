@@ -1,0 +1,152 @@
+/*
+ * modules/1_auth/ui/login.css
+ *
+ * Estilos personalizados de la pantalla de inicio de sesión.
+ * Complementa Bootstrap 5 con la paleta corporativa y tipografía del proyecto.
+ *
+ * Paleta (design.md):
+ *  - Azul primario:  #1a56a0
+ *  - Gris neutral:   #f4f6f9 (fondo)
+ *  - Texto oscuro:   #2c3e50
+ */
+
+/* ------------------------------------------------------------------ */
+/* Fuente principal: Arial (design.md)                                 */
+/* ------------------------------------------------------------------ */
+body,
+input,
+button,
+label,
+a {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ------------------------------------------------------------------ */
+/* Fondo de la pantalla de login                                       */
+/* ------------------------------------------------------------------ */
+.bg-login {
+    background-color: #f4f6f9;
+    background-image: linear-gradient(135deg, #e8eef6 0%, #f4f6f9 60%, #dce6f0 100%);
+}
+
+/* ------------------------------------------------------------------ */
+/* Tarjeta principal                                                   */
+/* ------------------------------------------------------------------ */
+.login-card {
+    width: 100%;
+    max-width: 440px;
+    border: none;
+    border-radius: 12px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Logo de la tortillería                                              */
+/* ------------------------------------------------------------------ */
+.login-logo {
+    max-width: 110px;
+    height: auto;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* ------------------------------------------------------------------ */
+/* Tipografía de encabezados                                           */
+/* ------------------------------------------------------------------ */
+.login-titulo-marca {
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    font-size: 2rem;
+    color: #1a56a0;
+    margin-bottom: 0;
+}
+
+.login-subtitulo {
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    font-size: 1.25rem;
+    color: #2c3e50;
+    margin-bottom: 4px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Campos de formulario — estado de error (borde rojo)                 */
+/* ------------------------------------------------------------------ */
+.form-control.is-invalid,
+.form-control.campo-invalido {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.20);
+}
+
+/* ------------------------------------------------------------------ */
+/* Botón primario con color corporativo                                */
+/* ------------------------------------------------------------------ */
+.btn-primary {
+    background-color: #1a56a0;
+    border-color: #1a56a0;
+    font-weight: bold;
+    letter-spacing: 0.03em;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #154a8a;
+    border-color: #154a8a;
+}
+
+.btn-primary:disabled,
+.btn-primary[aria-disabled="true"] {
+    background-color: #7aa3cc;
+    border-color: #7aa3cc;
+    cursor: not-allowed;
+    opacity: 0.75;
+}
+
+/* ------------------------------------------------------------------ */
+/* Botón de visibilidad de contraseña                                  */
+/* ------------------------------------------------------------------ */
+#boton-visibilidad {
+    border-color: #ced4da;
+    color: #6c757d;
+    transition: color 0.15s ease;
+}
+
+#boton-visibilidad:hover {
+    color: #1a56a0;
+    border-color: #1a56a0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Alerta de error                                                     */
+/* ------------------------------------------------------------------ */
+#alerta-error {
+    font-size: 0.9rem;
+    border-radius: 8px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Enlace de recuperación                                              */
+/* ------------------------------------------------------------------ */
+.link-secondary {
+    color: #6c757d;
+    text-decoration: none;
+}
+
+.link-secondary:hover {
+    color: #1a56a0;
+    text-decoration: underline;
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive: pantallas pequeñas                                      */
+/* ------------------------------------------------------------------ */
+@media (max-width: 480px) {
+    .login-card {
+        border-radius: 0;
+        min-height: 100vh;
+        box-shadow: none !important;
+    }
+
+    .card-body {
+        padding: 2rem 1.5rem !important;
+    }
+}
