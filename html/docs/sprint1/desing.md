@@ -100,6 +100,60 @@ Technical Constraints:
 
 * **Transitions:** Fade-in animation for error states (`opacity 0.2s ease-in-out`).
 
+
+## HU3 
+
+Diseño del Sistema: Catálogo e Información del Negocio (HU3)
+1. Diseño Visual y Psicología del Color
+
+    Paleta de Colores Institucional:
+
+        Naranja Cálido / Terracota (Color Primario): Transmite energía, apetito, cercania y calidez, ideal para negocios de alimentos de consumo diario (tortillerías y productos orgánicos). Se usa en botones de acción principal, logotipos y títulos destacados.
+
+        Verde Oliva / Natural (Color de Apoyo): Asociado con lo fresco, natural y saludable. Se utiliza en etiquetas de disponibilidad, insignias de precios y estados de éxito.
+
+        Blanco y Gris Claro (Fondos): Proporcionan limpieza, legibilidad y un diseño minimalista que deja destacar las imágenes de los productos.
+
+        Rojo de Alerta: Reservado exclusivamente para errores, productos agotados o advertencias de disponibilidad (<<extend>>).
+
+    Tipografía: Fuente principal Arial; títulos y encabezados en Arial Bold.
+
+    Estructura: Diseño responsive adaptado para e-commerce (web y móvil) con cuadrículas limpias y espacios en blanco equilibrados para Figma.
+
+2. Pantallas y Flujo de Interacción (HU3: Consultar Catálogo)
+1. Pantalla Principal del Catálogo
+
+    Título / Cabecera:
+
+        Nombre de la tienda / negocio alineado a la izquierda o centro.
+
+        Barra de búsqueda interactiva de productos con ícono de lupa.
+
+    Sección 1: Cuadrícula (Grid) de "Productos disponibles" (<<include>>):
+
+        Tarjetas de producto (cards) con bordes sutiles y sombra ligera.
+
+        "Mostrar imagen y descripción": Imagen contenedora (marcador de posición) con bordes redondeados y texto breve del producto.
+
+        "Mostrar precio": Etiqueta clara con formato de moneda, destacada visualmente.
+
+    Sección 2: Navegación:
+
+        Enlace o pestaña de navegación clara hacia la sección de "Información del negocio".
+
+2. Pantalla de Información del Negocio (<<extend>> desde "Consultar catálogo")
+
+    Título: "Acerca del Negocio" o "Información".
+
+    Bloque 1:
+
+        "Mostrar horario y teléfono": Bloque de texto descriptivo con las horas de atención al cliente y número de contacto con íconos representativos.
+
+    Bloque 2:
+
+        "Mostrar dirección y mapa": Marcador de posición visual simulando un mapa de ubicación geográfica y texto detallado con la dirección física del establecimiento.
+
+
 ## 4. Agent Integration Guidelines
 
 * When rendering or translating these specs into code or wireframes, maintain consistency with the token names specified in Section 1.
