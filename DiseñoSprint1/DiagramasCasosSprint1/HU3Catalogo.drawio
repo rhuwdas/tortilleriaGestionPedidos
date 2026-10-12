@@ -1,0 +1,37 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.1.2 Chrome/138.0.7204.243 Electron/37.4.0 Safari/537.36" version="28.1.2">
+  <diagram name="Página-1" id="N445bdx7kVsmS_D7x0BX">
+    <mxGraphModel dx="872" dy="529" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="NUv339_oJY1VGS4ZbWJX-1" value="Cliente" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" parent="1" vertex="1">
+          <mxGeometry x="40" y="250" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="NUv339_oJY1VGS4ZbWJX-3" value="" style="swimlane;startSize=0;" parent="1" vertex="1">
+          <mxGeometry x="130" y="130" width="410" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="NUv339_oJY1VGS4ZbWJX-6" value="Mostrar productos disponibles" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="NUv339_oJY1VGS4ZbWJX-3" vertex="1">
+          <mxGeometry x="100" y="45" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="NUv339_oJY1VGS4ZbWJX-7" value="Mostrar&amp;nbsp; informacion del negocio" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="NUv339_oJY1VGS4ZbWJX-3" vertex="1">
+          <mxGeometry x="70" y="165" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="7kY40EjJ0xPTHhpB2Thj-1" value="Catalogo web" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="NUv339_oJY1VGS4ZbWJX-3">
+          <mxGeometry x="145" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="NUv339_oJY1VGS4ZbWJX-21" value="" style="endArrow=none;html=1;rounded=0;entryX=0.005;entryY=0.611;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="NUv339_oJY1VGS4ZbWJX-1" target="NUv339_oJY1VGS4ZbWJX-6" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="270" y="390" as="sourcePoint" />
+            <mxPoint x="142.40379347624707" y="264.7553978144855" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7Brf8SWONQFrbnncIAJC-1" value="" style="endArrow=none;html=1;rounded=0;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="80" y="300" as="sourcePoint" />
+            <mxPoint x="200" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
