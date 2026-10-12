@@ -587,8 +587,201 @@ UNLOCK TABLES;
 commit;
 
 --
+-- Temporary table structure for view `vista_catalogo_web`
+--
+
+DROP TABLE IF EXISTS `vista_catalogo_web`;
+/*!50001 DROP VIEW IF EXISTS `vista_catalogo_web`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8mb4;
+/*!50001 CREATE VIEW `vista_catalogo_web` AS SELECT
+ 1 AS `id_producto`,
+  1 AS `producto`,
+  1 AS `precio_kilo`,
+  1 AS `unidad`,
+  1 AS `disponible` */;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary table structure for view `vista_clientes_registrados`
+--
+
+DROP TABLE IF EXISTS `vista_clientes_registrados`;
+/*!50001 DROP VIEW IF EXISTS `vista_clientes_registrados`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8mb4;
+/*!50001 CREATE VIEW `vista_clientes_registrados` AS SELECT
+ 1 AS `id_cliente`,
+  1 AS `nombre`,
+  1 AS `apellidos`,
+  1 AS `razon_social`,
+  1 AS `telefono`,
+  1 AS `email`,
+  1 AS `activo`,
+  1 AS `total_direcciones` */;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary table structure for view `vista_login_empleado`
+--
+
+DROP TABLE IF EXISTS `vista_login_empleado`;
+/*!50001 DROP VIEW IF EXISTS `vista_login_empleado`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8mb4;
+/*!50001 CREATE VIEW `vista_login_empleado` AS SELECT
+ 1 AS `id_empleado`,
+  1 AS `nombre`,
+  1 AS `apellidos`,
+  1 AS `usuario`,
+  1 AS `password_hash`,
+  1 AS `email`,
+  1 AS `activo`,
+  1 AS `ultimo_login`,
+  1 AS `id_rol`,
+  1 AS `rol`,
+  1 AS `modulo_principal` */;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary table structure for view `vista_pedidos_cliente`
+--
+
+DROP TABLE IF EXISTS `vista_pedidos_cliente`;
+/*!50001 DROP VIEW IF EXISTS `vista_pedidos_cliente`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8mb4;
+/*!50001 CREATE VIEW `vista_pedidos_cliente` AS SELECT
+ 1 AS `id_pedido`,
+  1 AS `fecha_pedido`,
+  1 AS `estado`,
+  1 AS `canal`,
+  1 AS `tipo_entrega`,
+  1 AS `fecha_hora_entrega_solicitada`,
+  1 AS `cliente`,
+  1 AS `telefono_cliente`,
+  1 AS `repartidor`,
+  1 AS `direccion_entrega`,
+  1 AS `colonia`,
+  1 AS `municipio`,
+  1 AS `total_pedido` */;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary table structure for view `vista_recuperacion_password`
+--
+
+DROP TABLE IF EXISTS `vista_recuperacion_password`;
+/*!50001 DROP VIEW IF EXISTS `vista_recuperacion_password`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8mb4;
+/*!50001 CREATE VIEW `vista_recuperacion_password` AS SELECT
+ 1 AS `id_recuperacion`,
+  1 AS `email`,
+  1 AS `codigo`,
+  1 AS `expira_en`,
+  1 AS `usado`,
+  1 AS `creado_en`,
+  1 AS `estado_codigo`,
+  1 AS `minutos_restantes`,
+  1 AS `id_empleado`,
+  1 AS `id_cliente`,
+  1 AS `tipo_usuario` */;
+SET character_set_client = @saved_cs_client;
+
+--
 -- Dumping routines for database 'tortilleria'
 --
+
+--
+-- Final view structure for view `vista_catalogo_web`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vista_catalogo_web`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_uca1400_ai_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
+/*!50001 VIEW `vista_catalogo_web` AS select `p`.`id_producto` AS `id_producto`,`p`.`nombre` AS `producto`,`p`.`precio_kilo` AS `precio_kilo`,`p`.`unidad` AS `unidad`,`p`.`disponible` AS `disponible` from `producto` `p` where `p`.`disponible` = 1 */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vista_clientes_registrados`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vista_clientes_registrados`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_uca1400_ai_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
+/*!50001 VIEW `vista_clientes_registrados` AS select `c`.`id_cliente` AS `id_cliente`,`c`.`nombre` AS `nombre`,`c`.`apellidos` AS `apellidos`,`c`.`razon_social` AS `razon_social`,`c`.`telefono` AS `telefono`,`c`.`email` AS `email`,`c`.`activo` AS `activo`,(select count(0) from `direccion` `d` where `d`.`id_cliente` = `c`.`id_cliente`) AS `total_direcciones` from `cliente` `c` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vista_login_empleado`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vista_login_empleado`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_uca1400_ai_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
+/*!50001 VIEW `vista_login_empleado` AS select `e`.`id_empleado` AS `id_empleado`,`e`.`nombre` AS `nombre`,`e`.`apellidos` AS `apellidos`,`e`.`usuario` AS `usuario`,`e`.`password_hash` AS `password_hash`,`e`.`email` AS `email`,`e`.`activo` AS `activo`,`e`.`ultimo_login` AS `ultimo_login`,`r`.`id_rol` AS `id_rol`,`r`.`rol` AS `rol`,case when `r`.`rol` = 'Administrador' then 'Admin' when `r`.`rol` = 'Vendedor' then 'Ventas' when `r`.`rol` = 'Cajero' then 'Caja' else 'Basico' end AS `modulo_principal` from (`empleado` `e` join `rol` `r` on(`e`.`id_rol` = `r`.`id_rol`)) where `e`.`activo` = 1 */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vista_pedidos_cliente`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vista_pedidos_cliente`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_uca1400_ai_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
+/*!50001 VIEW `vista_pedidos_cliente` AS select `p`.`id_pedido` AS `id_pedido`,`p`.`fecha_pedido` AS `fecha_pedido`,`p`.`estado` AS `estado`,`p`.`canal` AS `canal`,`p`.`tipo_entrega` AS `tipo_entrega`,`p`.`fecha_hora_entrega_solicitada` AS `fecha_hora_entrega_solicitada`,`c`.`nombre` AS `cliente`,`c`.`telefono` AS `telefono_cliente`,`r`.`nombre` AS `repartidor`,`d`.`calle` AS `direccion_entrega`,`d`.`colonia` AS `colonia`,`d`.`municipio` AS `municipio`,(select sum(`dp`.`cantidad` * `dp`.`precio_unitario`) from `detalle_pedido` `dp` where `dp`.`id_pedido` = `p`.`id_pedido`) AS `total_pedido` from (((`pedido` `p` join `cliente` `c` on(`p`.`id_cliente` = `c`.`id_cliente`)) left join `repartidor` `r` on(`p`.`id_repartidor` = `r`.`id_repartidor`)) left join `direccion` `d` on(`p`.`id_direccion` = `d`.`id_direccion`)) */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vista_recuperacion_password`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vista_recuperacion_password`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_uca1400_ai_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
+/*!50001 VIEW `vista_recuperacion_password` AS select `rp`.`id_recuperacion` AS `id_recuperacion`,`rp`.`email` AS `email`,`rp`.`codigo` AS `codigo`,`rp`.`expira_en` AS `expira_en`,`rp`.`usado` AS `usado`,`rp`.`creado_en` AS `creado_en`,case when `rp`.`usado` = 1 then 'Usado' when `rp`.`expira_en` < current_timestamp() then 'Expirado' else 'Vigente' end AS `estado_codigo`,timestampdiff(MINUTE,current_timestamp(),`rp`.`expira_en`) AS `minutos_restantes`,(select `e`.`id_empleado` from `empleado` `e` where `e`.`email` = `rp`.`email` limit 1) AS `id_empleado`,(select `c`.`id_cliente` from `cliente` `c` where `c`.`email` = `rp`.`email` limit 1) AS `id_cliente`,case when exists(select 1 from `empleado` `e` where `e`.`email` = `rp`.`email` limit 1) then 'Empleado' when exists(select 1 from `cliente` `c` where `c`.`email` = `rp`.`email` limit 1) then 'Cliente' else 'No registrado' end AS `tipo_usuario` from `recuperacion_password` `rp` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -599,4 +792,4 @@ commit;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-10-12 12:44:52
+-- Dump completed on 2026-10-12 12:59:51
