@@ -52,3 +52,7 @@ Desktop.ini
 # --- Archivos de configuración local sobreescritos ---
 config.local.php
 config.local.js
+
+# --- Documentación interna y directivas de agentes ---
+/html/docs/
+/html/agents.md
