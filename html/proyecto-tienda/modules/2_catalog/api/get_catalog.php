@@ -108,12 +108,12 @@ if (!empty($_GET['busqueda'])) {
 try {
     $modelo     = new ProductModel();
     $productos  = $modelo->obtenerTodos($filtros);
-    $categorias = $modelo->obtenerCategorias();
+    $unidades   = $modelo->obtenerUnidades();
 
     http_response_code(200);
     responderJson(true, [
-        'productos'  => $productos,
-        'categorias' => $categorias,
+        'productos' => $productos,
+        'unidades'  => $unidades,
     ]);
 
 } catch (RuntimeException $e) {

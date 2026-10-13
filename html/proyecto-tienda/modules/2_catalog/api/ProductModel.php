@@ -6,110 +6,105 @@
  * Encapsula todas las consultas SQL relacionadas con la obtención de productos.
  * Todas las consultas usan PDO con prepared statements (AGENTS.md).
  *
- * Métodos disponibles:
- *  - obtenerTodos(array $filtros): array
- *  - obtenerCategorias(): array
+ * Tabla real en BD: producto
+ *   - id_producto  INT PK
+ *   - nombre       VARCHAR(100)
+ *   - precio_kilo  DECIMAL(10,2)
+ *   - unidad       VARCHAR(30)
+ *   - disponible   TINYINT(1)
+ *
+ * Vista disponible: vista_catalogo_web (solo productos con disponible = 1)
  */
-
 class ProductModel
 {
-    /**
-     * @var PDO Instancia de conexión PDO obtenida desde el Singleton Database.
-     */
+    /** @var PDO Instancia de conexión PDO */
     private PDO $pdo;
 
-    /**
-     * Constructor: obtiene la conexión PDO del Singleton.
-     */
     public function __construct()
     {
         $this->pdo = Database::obtenerInstancia()->obtenerConexion();
     }
 
     /**
-     * Devuelve el listado de productos aplicando filtros opcionales de categoría
-     * y disponibilidad. Admite también búsqueda por texto en nombre o descripción.
+     * Devuelve el listado de productos con filtros opcionales.
      *
      * @param array $filtros {
-     *   @type string $categoria      Nombre de categoría a filtrar (opcional).
-     *   @type bool   $soloDisponible true para devolver sólo productos disponibles (opcional).
-     *   @type string $busqueda       Texto libre para buscar en nombre/descripción (opcional).
+     *   @type bool   $soloDisponible true para devolver solo productos disponibles.
+     *   @type string $busqueda       Texto libre para buscar en nombre.
      * }
      * @return array Listado de productos como arrays asociativos.
      */
     public function obtenerTodos(array $filtros = []): array
     {
-        // ── Construcción dinámica de la cláusula WHERE ──────────────────────
         $condiciones = [];
         $parametros  = [];
 
-        // Filtro por categoría
-        if (!empty($filtros['categoria'])) {
-            $condiciones[] = 'p.categoria = :categoria';
-            $parametros[':categoria'] = trim($filtros['categoria']);
-        }
-
-        // Filtro de disponibilidad: solo productos con stock > 0
+        // Filtro de disponibilidad
         if (!empty($filtros['soloDisponible'])) {
             $condiciones[] = 'p.disponible = 1';
         }
 
-        // Filtro de búsqueda por texto (nombre o descripción)
+        // Filtro de búsqueda por nombre
         if (!empty($filtros['busqueda'])) {
-            $condiciones[] = '(p.nombre LIKE :busqueda OR p.descripcion LIKE :busqueda)';
+            $condiciones[] = 'p.nombre LIKE :busqueda';
             $parametros[':busqueda'] = '%' . trim($filtros['busqueda']) . '%';
         }
 
-        // Ensamblar la sentencia SQL completa
         $clausulaWhere = count($condiciones) > 0
             ? 'WHERE ' . implode(' AND ', $condiciones)
             : '';
 
         $sql = "SELECT
-                    p.id,
+                    p.id_producto   AS id,
                     p.nombre,
-                    p.descripcion,
-                    p.precio,
-                    p.categoria,
-                    p.imagen_url,
+                    p.precio_kilo,
+                    p.unidad,
                     p.disponible
-                FROM productos p
+                FROM producto p
                 {$clausulaWhere}
-                ORDER BY p.categoria ASC, p.nombre ASC";
+                ORDER BY p.nombre ASC";
 
-        // Preparar y ejecutar la consulta
         $sentencia = $this->pdo->prepare($sql);
 
         foreach ($parametros as $clave => $valor) {
-            // Determinar el tipo PDO correcto para cada parámetro
-            $tipoPdo = is_int($valor) ? PDO::PARAM_INT : PDO::PARAM_STR;
-            $sentencia->bindValue($clave, $valor, $tipoPdo);
+            $sentencia->bindValue($clave, $valor, PDO::PARAM_STR);
         }
 
         $sentencia->execute();
-
         return $sentencia->fetchAll();
     }
 
     /**
-     * Devuelve la lista de categorías distintas registradas en la tabla productos.
-     * Se usa para poblar el selector de filtro en el catálogo.
+     * Devuelve solo los productos disponibles (disponible = 1).
+     * Usa la vista vista_catalogo_web de la BD.
      *
-     * @return array Lista de strings con los nombres de categoría.
+     * @return array Listado de productos disponibles.
      */
-    public function obtenerCategorias(): array
+    public function obtenerDisponibles(): array
     {
         $sentencia = $this->pdo->prepare(
-            'SELECT DISTINCT categoria
-               FROM productos
-              WHERE categoria IS NOT NULL
-                AND categoria != \'\'
-              ORDER BY categoria ASC'
+            'SELECT id_producto AS id, producto AS nombre, precio_kilo, unidad, disponible
+               FROM vista_catalogo_web
+              ORDER BY producto ASC'
         );
-
         $sentencia->execute();
+        return $sentencia->fetchAll();
+    }
 
-        // Devolver solo los valores del campo, no los arrays completos
+    /**
+     * Devuelve la lista de unidades distintas para el filtro del catálogo.
+     *
+     * @return array Lista de strings con las unidades (ej. "kilo", "pieza").
+     */
+    public function obtenerUnidades(): array
+    {
+        $sentencia = $this->pdo->prepare(
+            'SELECT DISTINCT unidad
+               FROM producto
+              WHERE unidad IS NOT NULL
+              ORDER BY unidad ASC'
+        );
+        $sentencia->execute();
         return $sentencia->fetchAll(PDO::FETCH_COLUMN, 0);
     }
 }
