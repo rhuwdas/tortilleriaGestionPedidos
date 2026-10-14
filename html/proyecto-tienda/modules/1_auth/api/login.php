@@ -57,10 +57,13 @@ header('Pragma: no-cache');
 /** Mensaje genérico de error: no revela si el correo o la contraseña fallaron (HU1). */
 const MENSAJE_CREDENCIALES_INVALIDAS = 'Correo o contraseña incorrectos.';
 
-/** Rutas de redirección por rol (HU1 — tarea 1.5). */
+/** Rutas de redirección por rol (HU1 — tarea 1.5).
+ *  Los valores deben coincidir exactamente con la columna 'rol' de la tabla rol. */
 const RUTAS_POR_ROL = [
-    'admin'   => '/proyecto-tienda/?ruta=/dashboard',
-    'cliente' => '/proyecto-tienda/?ruta=/catalogo',
+    'Administrador' => '/proyecto-tienda/?ruta=/dashboard',
+    'Vendedor'      => '/proyecto-tienda/?ruta=/dashboard',
+    'Cajero'        => '/proyecto-tienda/?ruta=/dashboard',
+    'cliente'       => '/proyecto-tienda/?ruta=/catalogo',
 ];
 
 /** Ruta de redirección por defecto si el rol no está mapeado. */

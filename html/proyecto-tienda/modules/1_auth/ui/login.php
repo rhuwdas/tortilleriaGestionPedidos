@@ -72,6 +72,19 @@ if (!empty($_SESSION['id_usuario'])) {
                 <p class="text-muted small">Ingresa tus credenciales para continuar</p>
             </div>
 
+            <?php
+            // Mostrar mensaje de éxito si viene de recuperación de contraseña
+            if (!empty($_SESSION['mensaje_exito'])):
+            ?>
+            <div class="alert alert-success" role="alert" aria-live="polite">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <?= htmlspecialchars($_SESSION['mensaje_exito'], ENT_QUOTES, 'UTF-8') ?>
+            </div>
+            <?php
+                unset($_SESSION['mensaje_exito']);
+            endif;
+            ?>
+
             <!-- Alerta de error (oculta por defecto, se muestra vía JS) -->
             <div
                 id="alerta-error"
@@ -179,7 +192,6 @@ if (!empty($_SESSION['id_usuario'])) {
     <!-- Bootstrap 5 JS Bundle (incluye Popper) -->
     <script
         src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmE5sRFtZoMPxnQXVFf0vZQ9kXa"
         crossorigin="anonymous"
         defer
     ></script>
