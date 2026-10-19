@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: db
--- Tiempo de generación: 13-10-2026 a las 19:46:59
+-- Tiempo de generación: 19-10-2026 a las 16:13:48
 -- Versión del servidor: 26.7.0
 -- Versión de PHP: 8.3.35
 
@@ -458,12 +458,12 @@ INSERT INTO `venta` (`id_venta`, `fecha_venta`, `monto_total`, `id_cliente`, `id
 -- (Véase abajo para la vista actual)
 --
 CREATE TABLE `vista_catalogo_web` (
-`id_producto` int
-,`producto` varchar(100)
-,`categoria` enum('Tortilla','Masa')
-,`precio_kilo` decimal(10,2)
-,`unidad` varchar(30)
+`categoria` enum('Tortilla','Masa')
 ,`disponible` tinyint(1)
+,`id_producto` int
+,`precio_kilo` decimal(10,2)
+,`producto` varchar(100)
+,`unidad` varchar(30)
 );
 
 -- --------------------------------------------------------
@@ -473,13 +473,13 @@ CREATE TABLE `vista_catalogo_web` (
 -- (Véase abajo para la vista actual)
 --
 CREATE TABLE `vista_clientes_registrados` (
-`id_cliente` int
-,`nombre` varchar(150)
+`activo` tinyint(1)
 ,`apellidos` varchar(150)
+,`email` varchar(100)
+,`id_cliente` int
+,`nombre` varchar(150)
 ,`razon_social` varchar(200)
 ,`telefono` varchar(20)
-,`email` varchar(100)
-,`activo` tinyint(1)
 ,`total_direcciones` bigint
 );
 
@@ -490,17 +490,17 @@ CREATE TABLE `vista_clientes_registrados` (
 -- (Véase abajo para la vista actual)
 --
 CREATE TABLE `vista_login_empleado` (
-`id_empleado` int
-,`nombre` varchar(100)
+`activo` tinyint(1)
 ,`apellidos` varchar(100)
-,`usuario` varchar(50)
-,`password_hash` varchar(255)
 ,`email` varchar(120)
-,`activo` tinyint(1)
-,`ultimo_login` datetime
+,`id_empleado` int
 ,`id_rol` int
-,`rol` varchar(50)
 ,`modulo_principal` varchar(6)
+,`nombre` varchar(100)
+,`password_hash` varchar(255)
+,`rol` varchar(50)
+,`ultimo_login` datetime
+,`usuario` varchar(50)
 );
 
 -- --------------------------------------------------------
@@ -510,18 +510,18 @@ CREATE TABLE `vista_login_empleado` (
 -- (Véase abajo para la vista actual)
 --
 CREATE TABLE `vista_pedidos_cliente` (
-`id_pedido` int
-,`fecha_pedido` datetime
-,`estado` enum('Pendiente','En Proceso','En Ruta','Entregado','Cancelado')
-,`canal` enum('Web','Mostrador','Teléfono')
-,`tipo_entrega` enum('Domicilio','Recoger en local')
-,`fecha_hora_entrega_solicitada` datetime
+`canal` enum('Web','Mostrador','Teléfono')
 ,`cliente` varchar(150)
-,`telefono_cliente` varchar(20)
-,`repartidor` varchar(100)
-,`direccion_entrega` varchar(150)
 ,`colonia` varchar(100)
+,`direccion_entrega` varchar(150)
+,`estado` enum('Pendiente','En Proceso','En Ruta','Entregado','Cancelado')
+,`fecha_hora_entrega_solicitada` datetime
+,`fecha_pedido` datetime
+,`id_pedido` int
 ,`municipio` varchar(100)
+,`repartidor` varchar(100)
+,`telefono_cliente` varchar(20)
+,`tipo_entrega` enum('Domicilio','Recoger en local')
 ,`total_pedido` decimal(42,4)
 );
 
@@ -532,17 +532,17 @@ CREATE TABLE `vista_pedidos_cliente` (
 -- (Véase abajo para la vista actual)
 --
 CREATE TABLE `vista_recuperacion_password` (
-`id_recuperacion` int
-,`email` varchar(120)
-,`codigo` char(6)
-,`expira_en` datetime
-,`usado` tinyint(1)
+`codigo` char(6)
 ,`creado_en` datetime
+,`email` varchar(120)
 ,`estado_codigo` varchar(8)
-,`minutos_restantes` bigint
-,`id_empleado` bigint
+,`expira_en` datetime
 ,`id_cliente` bigint
+,`id_empleado` bigint
+,`id_recuperacion` int
+,`minutos_restantes` bigint
 ,`tipo_usuario` varchar(13)
+,`usado` tinyint(1)
 );
 
 --
