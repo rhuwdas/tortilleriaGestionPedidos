@@ -25,7 +25,7 @@
 
 ## Reglas
 - Implementar estrictamente lo solicitado en las tareas del sprint.
-- No modificar archivos de la carpeta `docs/` ni este archivo `agents.md`.
+- No modificar archivos de la carpeta `docs/` nio este archivo `agents.md`.
 - Seguir los requisitos y el diseño de la carpeta del sprint correspondiente.
 - No utilizar Composer dentro del proyecto.
 - No crear la base de datos mediante código, ya que se encuentra preconfigurada de manera independiente en el SGBD de Docker.
