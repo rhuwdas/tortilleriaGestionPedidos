@@ -53,6 +53,7 @@ $apellidos = trim($datosEntrada['apellidos'] ?? '');
 $email = trim($datosEntrada['email'] ?? '');
 $telefono = trim($datosEntrada['telefono'] ?? '');
 $contrasena = $datosEntrada['contrasena'] ?? '';
+$confirmarContrasena = isset($datosEntrada['confirmar_contrasena']) ? (string)$datosEntrada['confirmar_contrasena'] : null;
 
 // Datos de dirección opcional
 $calle = trim($datosEntrada['calle'] ?? '');
@@ -80,7 +81,8 @@ if (!preg_match('/^\d{10}$/', $telefono)) {
     http_response_code(422);
     echo json_encode([
         'exito' => false,
-        'mensaje' => 'El teléfono debe contener 10 dígitos.'
+        'mensaje' => 'El teléfono debe contener 10 dígitos.',
+        'campo' => 'telefono'
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -92,13 +94,57 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     http_response_code(422);
     echo json_encode([
         'exito' => false,
-        'mensaje' => 'El correo electrónico no tiene un formato válido.'
+        'mensaje' => 'El correo electrónico no tiene un formato válido.',
+        'campo' => 'email'
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3.5 Validación de cobertura de dirección de entrega (flujo alterno)
+// 4. Validación de robustez de contraseña (replicada de recuperación: mín. 8 caracteres, 1 mayúscula, 1 número)
+// ─────────────────────────────────────────────────────────────────────────────
+if (strlen($contrasena) < 8) {
+    http_response_code(422);
+    echo json_encode([
+        'exito' => false,
+        'mensaje' => 'La contraseña debe tener al menos 8 caracteres.',
+        'campo' => 'contrasena'
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if (!preg_match('/[A-Z]/', $contrasena)) {
+    http_response_code(422);
+    echo json_encode([
+        'exito' => false,
+        'mensaje' => 'La contraseña debe contener al menos una letra mayúscula.',
+        'campo' => 'contrasena'
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if (!preg_match('/[0-9]/', $contrasena)) {
+    http_response_code(422);
+    echo json_encode([
+        'exito' => false,
+        'mensaje' => 'La contraseña debe contener al menos un número.',
+        'campo' => 'contrasena'
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($confirmarContrasena !== null && $confirmarContrasena !== '' && $contrasena !== $confirmarContrasena) {
+    http_response_code(422);
+    echo json_encode([
+        'exito' => false,
+        'mensaje' => 'Las contraseñas no coinciden.',
+        'campo' => 'confirmar_contrasena'
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. Validación de cobertura de dirección de entrega (flujo alterno)
 // ─────────────────────────────────────────────────────────────────────────────
 if ($calle !== '' && $municipio !== '') {
     $municipiosCobertura = ['oaxaca', 'toluca', 'metepec', 'zinacantepec', 'san mateo atenco', 'lerma', 'centro'];
@@ -115,16 +161,40 @@ if ($calle !== '' && $municipio !== '') {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. Verificación de unicidad de correo electrónico en BD (CA-HU4-001)
+// 6. Verificación en base de datos: que no exista correo, teléfono ni nombre
 // ─────────────────────────────────────────────────────────────────────────────
 try {
     $modeloCliente = new ClienteModel();
 
+    // 6.1 Validar unicidad de correo electrónico (CA-HU4-001)
     if ($modeloCliente->existeCorreo($email)) {
         http_response_code(409);
         echo json_encode([
             'exito' => false,
-            'mensaje' => 'El correo ingresado ya se encuentra registrado.'
+            'mensaje' => 'El correo ingresado ya se encuentra registrado.',
+            'campo' => 'email'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // 6.2 Validar unicidad de teléfono
+    if ($modeloCliente->existeTelefono($telefono)) {
+        http_response_code(409);
+        echo json_encode([
+            'exito' => false,
+            'mensaje' => 'El número de teléfono ya se encuentra registrado.',
+            'campo' => 'telefono'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // 6.3 Validar unicidad de nombre y apellidos
+    if ($modeloCliente->existeNombre($nombre, $apellidos)) {
+        http_response_code(409);
+        echo json_encode([
+            'exito' => false,
+            'mensaje' => 'Ya existe un cliente registrado con este nombre y apellidos.',
+            'campo' => 'nombre'
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }

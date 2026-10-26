@@ -34,9 +34,50 @@ class ClienteModel
     public function existeCorreo(string $correo): bool
     {
         $consulta = $this->conexionBaseDatos->prepare(
-            'SELECT COUNT(*) FROM cliente WHERE LOWER(email) = LOWER(:email)'
+            'SELECT COUNT(*) FROM cliente WHERE LOWER(TRIM(email)) = LOWER(TRIM(:email))'
         );
         $consulta->bindValue(':email', trim($correo), PDO::PARAM_STR);
+        $consulta->execute();
+
+        return (int)$consulta->fetchColumn() > 0;
+    }
+
+    /**
+     * Verifica si un número de teléfono ya se encuentra registrado en la tabla cliente.
+     * Normaliza los dígitos para evitar discrepancias de formato (ej. con guiones o espacios).
+     *
+     * @param string $telefono Número de teléfono a verificar (10 dígitos).
+     * @return bool True si ya existe, false si está disponible.
+     */
+    public function existeTelefono(string $telefono): bool
+    {
+        $soloDigitos = preg_replace('/\D/', '', $telefono);
+        $consulta = $this->conexionBaseDatos->prepare(
+            "SELECT COUNT(*) FROM cliente 
+             WHERE REPLACE(REPLACE(REPLACE(telefono, '-', ''), ' ', ''), '.', '') = :telefono"
+        );
+        $consulta->bindValue(':telefono', $soloDigitos, PDO::PARAM_STR);
+        $consulta->execute();
+
+        return (int)$consulta->fetchColumn() > 0;
+    }
+
+    /**
+     * Verifica si ya existe un cliente con el mismo nombre y apellidos registrados.
+     *
+     * @param string $nombre Nombre del cliente.
+     * @param string $apellidos Apellidos del cliente.
+     * @return bool True si ya existe coincidencia exacta, false de lo contrario.
+     */
+    public function existeNombre(string $nombre, string $apellidos): bool
+    {
+        $consulta = $this->conexionBaseDatos->prepare(
+            'SELECT COUNT(*) FROM cliente 
+             WHERE LOWER(TRIM(nombre)) = LOWER(TRIM(:nombre)) 
+               AND LOWER(TRIM(apellidos)) = LOWER(TRIM(:apellidos))'
+        );
+        $consulta->bindValue(':nombre', trim($nombre), PDO::PARAM_STR);
+        $consulta->bindValue(':apellidos', trim($apellidos), PDO::PARAM_STR);
         $consulta->execute();
 
         return (int)$consulta->fetchColumn() > 0;

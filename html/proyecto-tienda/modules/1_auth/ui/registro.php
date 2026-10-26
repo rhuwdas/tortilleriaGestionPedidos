@@ -169,10 +169,11 @@ if (!empty($_SESSION['id_usuario']) || !empty($_SESSION['id_cliente'])) {
                             id="campo-contrasena"
                             name="contrasena"
                             class="form-control control-formulario"
-                            placeholder="Mínimo 6 caracteres"
+                            placeholder="Mín. 8 caracteres"
                             maxlength="255"
                             required
                             aria-required="true"
+                            aria-describedby="requisitos-contrasena"
                         >
                         <button
                             type="button"
@@ -180,12 +181,61 @@ if (!empty($_SESSION['id_usuario']) || !empty($_SESSION['id_cliente'])) {
                             class="btn btn-outline-secondary"
                             style="border-color: #D1D5DB; border-radius: 0 8px 8px 0;"
                             aria-label="Mostrar u ocultar contraseña"
+                            title="Mostrar u ocultar contraseña"
                         >
                             <i id="icono-visibilidad-contrasena" class="bi bi-eye"></i>
                         </button>
                     </div>
+
+                    <!-- Indicador de requisitos en tiempo real (replicado de recuperar contraseña) -->
+                    <div id="requisitos-contrasena" class="requisitos-contrasena-lista">
+                        <span id="req-longitud" class="requisito-item text-muted">
+                            <i class="bi bi-x-circle text-danger"></i> Mín. 8 caracteres
+                        </span>
+                        <span id="req-mayuscula" class="requisito-item text-muted">
+                            <i class="bi bi-x-circle text-danger"></i> Al menos 1 mayúscula
+                        </span>
+                        <span id="req-numero" class="requisito-item text-muted">
+                            <i class="bi bi-x-circle text-danger"></i> Al menos 1 número
+                        </span>
+                    </div>
+
                     <div id="error-contrasena" class="texto-error-inline">
-                        La contraseña es obligatoria.
+                        La contraseña es obligatoria y debe cumplir los requisitos.
+                    </div>
+                </div>
+
+                <!-- Campo: Confirmar Contraseña -->
+                <div class="mb-3">
+                    <label for="campo-confirmar-contrasena" class="etiqueta-formulario">
+                        Confirmar Contraseña <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                        <input
+                            type="password"
+                            id="campo-confirmar-contrasena"
+                            name="confirmar_contrasena"
+                            class="form-control control-formulario"
+                            placeholder="Repite tu contraseña"
+                            maxlength="255"
+                            required
+                            aria-required="true"
+                            aria-describedby="mensaje-coincidencia"
+                        >
+                        <button
+                            type="button"
+                            id="boton-visibilidad-confirmar"
+                            class="btn btn-outline-secondary"
+                            style="border-color: #D1D5DB; border-radius: 0 8px 8px 0;"
+                            aria-label="Mostrar u ocultar confirmación de contraseña"
+                            title="Mostrar u ocultar contraseña"
+                        >
+                            <i id="icono-visibilidad-confirmar" class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    <div id="mensaje-coincidencia" class="form-text mt-1"></div>
+                    <div id="error-confirmar-contrasena" class="texto-error-inline">
+                        Las contraseñas no coinciden.
                     </div>
                 </div>
 

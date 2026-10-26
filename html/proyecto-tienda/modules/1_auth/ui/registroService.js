@@ -2,18 +2,22 @@
  * modules/1_auth/ui/registroService.js
  *
  * Servicio de validación e interacción para el registro de clientes (HU4).
- * Responsabilidades (Tareas 4.2 y 4.5):
+ * Responsabilidades:
  *  1. Restringir estrictamente la entrada del teléfono a 10 dígitos numéricos.
  *  2. Validar en tiempo real y al enviar el formato del correo electrónico.
- *  3. Validar presencia de campos requeridos (nombre, apellidos, contraseña).
- *  4. Alternar la visibilidad de la contraseña.
- *  5. Enviar la petición POST asíncrona mediante Fetch API.
- *  6. Gestionar el manejo de errores en interfaz para los flujos alternos:
- *     - Correo duplicado ("El correo ingresado ya se encuentra registrado") (CA-HU4-001).
- *     - Teléfono inválido ("El teléfono debe contener 10 dígitos") (CA-HU4-002).
- *     - Dirección fuera de alcance ("La dirección está fuera de alcance").
- *     - Campos faltantes ("Por favor, completa todos los campos obligatorios.").
- *  7. Manejar el estado de carga y retroalimentación de éxito (CA-003).
+ *  3. Validar robustez de contraseña en tiempo real (mín. 8 caracteres, 1 mayúscula, 1 número)
+ *     replicando las reglas de la pantalla de recuperación de contraseña.
+ *  4. Validar confirmación y coincidencia de contraseña.
+ *  5. Alternar la visibilidad de contraseña y confirmación.
+ *  6. Enviar la petición POST asíncrona mediante Fetch API.
+ *  7. Gestionar el manejo de errores en interfaz para los flujos alternos:
+ *     - Correo duplicado en base de datos.
+ *     - Teléfono duplicado en base de datos.
+ *     - Nombre y apellidos duplicados en base de datos.
+ *     - Dirección fuera de alcance.
+ *     - Formato de teléfono inválido (10 dígitos).
+ *     - Campos faltantes.
+ *  8. Estado de carga y retroalimentación de éxito.
  *
  * Restricciones (AGENTS.md):
  *  - JavaScript Vanilla ES6+ sin librerías externas.
@@ -32,11 +36,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const campoCorreo = document.getElementById('campo-correo');
     const campoTelefono = document.getElementById('campo-telefono');
     const campoContrasena = document.getElementById('campo-contrasena');
+    const campoConfirmarContrasena = document.getElementById('campo-confirmar-contrasena');
     const botonVisibilidadContrasena = document.getElementById('boton-visibilidad-contrasena');
     const iconoVisibilidadContrasena = document.getElementById('icono-visibilidad-contrasena');
+    const botonVisibilidadConfirmar = document.getElementById('boton-visibilidad-confirmar');
+    const iconoVisibilidadConfirmar = document.getElementById('icono-visibilidad-confirmar');
     const botonRegistrarse = document.getElementById('boton-registrarse');
     const spinnerRegistro = document.getElementById('spinner-registro');
     const textoBotonRegistrarse = document.getElementById('texto-boton-registrarse');
+
+    // Indicadores de requisitos de contraseña (replicados de recuperación)
+    const reqLongitud = document.getElementById('req-longitud');
+    const reqMayuscula = document.getElementById('req-mayuscula');
+    const reqNumero = document.getElementById('req-numero');
+    const mensajeCoincidencia = document.getElementById('mensaje-coincidencia');
 
     // Campos de dirección opcional
     const campoCalle = document.getElementById('campo-calle');
@@ -51,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorCorreo = document.getElementById('error-correo');
     const errorTelefono = document.getElementById('error-telefono');
     const errorContrasena = document.getElementById('error-contrasena');
+    const errorConfirmarContrasena = document.getElementById('error-confirmar-contrasena');
     const alertaErrorGeneral = document.getElementById('alerta-error-general');
     const mensajeErrorGeneral = document.getElementById('mensaje-error-general');
     const alertaExitoGeneral = document.getElementById('alerta-exito-general');
@@ -60,42 +74,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const expresionCorreo = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 1. Alternar visibilidad de contraseña
+    // 1. Alternar visibilidad de contraseñas
     // ─────────────────────────────────────────────────────────────────────────
-    if (botonVisibilidadContrasena && campoContrasena && iconoVisibilidadContrasena) {
-        botonVisibilidadContrasena.addEventListener('click', () => {
-            const esPassword = campoContrasena.getAttribute('type') === 'password';
-            campoContrasena.setAttribute('type', esPassword ? 'text' : 'password');
-            iconoVisibilidadContrasena.className = esPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
-            campoContrasena.focus();
+    const configurarBotonVisibilidad = (boton, campo, icono) => {
+        if (!boton || !campo || !icono) return;
+        boton.addEventListener('click', () => {
+            const esPassword = campo.getAttribute('type') === 'password';
+            campo.setAttribute('type', esPassword ? 'text' : 'password');
+            icono.className = esPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+            campo.focus();
         });
-    }
+    };
+
+    configurarBotonVisibilidad(botonVisibilidadContrasena, campoContrasena, iconoVisibilidadContrasena);
+    configurarBotonVisibilidad(botonVisibilidadConfirmar, campoConfirmarContrasena, iconoVisibilidadConfirmar);
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 2. Restricción estricta de teléfono a 10 dígitos numéricos
+    // 2. Validación y restricción de teléfono (10 dígitos numéricos)
     // ─────────────────────────────────────────────────────────────────────────
     if (campoTelefono) {
-        // Filtrar inmediatamente caracteres no numéricos al escribir y truncar a 10
         campoTelefono.addEventListener('input', () => {
             const valorFiltrado = campoTelefono.value.replace(/\D/g, '').slice(0, 10);
             campoTelefono.value = valorFiltrado;
 
-            // Ocultar error si ya completó los 10 dígitos
             if (valorFiltrado.length === 10) {
                 limpiarErrorCampo(campoTelefono, errorTelefono);
             }
         });
 
-        // Validar al salir del campo
         campoTelefono.addEventListener('blur', () => {
             validarTelefono();
         });
     }
 
-    /**
-     * Valida que el campo de teléfono contenga exactamente 10 dígitos numéricos.
-     * @returns {boolean} True si es válido, False de lo contrario.
-     */
     const validarTelefono = () => {
         const valor = campoTelefono.value.trim();
         if (valor.length === 0) {
@@ -113,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 3. Validación de formato de correo electrónico
+    // 3. Validación de correo electrónico
     // ─────────────────────────────────────────────────────────────────────────
     if (campoCorreo) {
         campoCorreo.addEventListener('input', () => {
@@ -127,10 +138,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /**
-     * Valida que el correo electrónico no esté vacío y cumpla el formato de email.
-     * @returns {boolean} True si es válido, False de lo contrario.
-     */
     const validarCorreo = () => {
         const valor = campoCorreo.value.trim();
         if (valor.length === 0) {
@@ -148,16 +155,75 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 4. Funciones auxiliares para visualización de errores
+    // 4. Validación de robustez de contraseña (mín. 8 chars, 1 mayúscula, 1 número)
     // ─────────────────────────────────────────────────────────────────────────
+    const actualizarIndicadorRequisito = (elemento, cumple, texto) => {
+        if (!elemento) return;
+        if (cumple) {
+            elemento.innerHTML = `<i class="bi bi-check-circle-fill text-success"></i> ${texto}`;
+            elemento.classList.remove('text-muted');
+            elemento.classList.add('text-success');
+        } else {
+            elemento.innerHTML = `<i class="bi bi-x-circle text-danger"></i> ${texto}`;
+            elemento.classList.remove('text-success');
+            elemento.classList.add('text-muted');
+        }
+    };
 
-    /**
-     * Muestra el estilo de error y el mensaje explicativo de un campo.
-     * @param {HTMLInputElement} campo
-     * @param {HTMLElement} elementoError
-     * @param {string} mensaje
-     */
+    const evaluarContrasena = () => {
+        const contrasena = campoContrasena ? campoContrasena.value : '';
+        const confirmacion = campoConfirmarContrasena ? campoConfirmarContrasena.value : '';
+
+        const cumpleLongitud = contrasena.length >= 8;
+        const cumpleMayuscula = /[A-Z]/.test(contrasena);
+        const cumpleNumero = /[0-9]/.test(contrasena);
+
+        actualizarIndicadorRequisito(reqLongitud, cumpleLongitud, 'Mín. 8 caracteres');
+        actualizarIndicadorRequisito(reqMayuscula, cumpleMayuscula, 'Al menos 1 mayúscula');
+        actualizarIndicadorRequisito(reqNumero, cumpleNumero, 'Al menos 1 número');
+
+        // Validación de coincidencia con el campo de confirmación
+        if (campoConfirmarContrasena && confirmacion.length > 0) {
+            const coinciden = contrasena === confirmacion;
+            if (coinciden) {
+                if (mensajeCoincidencia) {
+                    mensajeCoincidencia.textContent = '✓ Las contraseñas coinciden.';
+                    mensajeCoincidencia.className = 'form-text text-success fw-medium';
+                }
+                limpiarErrorCampo(campoConfirmarContrasena, errorConfirmarContrasena);
+            } else {
+                if (mensajeCoincidencia) {
+                    mensajeCoincidencia.textContent = 'Las contraseñas no coinciden.';
+                    mensajeCoincidencia.className = 'form-text text-danger fw-medium';
+                }
+            }
+        } else if (mensajeCoincidencia) {
+            mensajeCoincidencia.textContent = '';
+        }
+
+        return cumpleLongitud && cumpleMayuscula && cumpleNumero;
+    };
+
+    if (campoContrasena) {
+        campoContrasena.addEventListener('input', () => {
+            evaluarContrasena();
+            if (evaluarContrasena()) {
+                limpiarErrorCampo(campoContrasena, errorContrasena);
+            }
+        });
+    }
+
+    if (campoConfirmarContrasena) {
+        campoConfirmarContrasena.addEventListener('input', () => {
+            evaluarContrasena();
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 5. Funciones auxiliares de estilo y errores
+    // ─────────────────────────────────────────────────────────────────────────
     const mostrarErrorCampo = (campo, elementoError, mensaje) => {
+        if (!campo) return;
         campo.classList.add('is-invalid');
         campo.style.borderColor = '#DC2626';
         if (elementoError) {
@@ -166,12 +232,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    /**
-     * Limpia los estilos de error y oculta el mensaje explicativo.
-     * @param {HTMLInputElement} campo
-     * @param {HTMLElement} elementoError
-     */
     const limpiarErrorCampo = (campo, elementoError) => {
+        if (!campo) return;
         campo.classList.remove('is-invalid');
         campo.style.borderColor = '#D1D5DB';
         if (elementoError) {
@@ -179,10 +241,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    /**
-     * Muestra la alerta de error general superior.
-     * @param {string} mensaje
-     */
     const mostrarAlertaGeneral = (mensaje) => {
         if (alertaErrorGeneral && mensajeErrorGeneral) {
             mensajeErrorGeneral.textContent = mensaje;
@@ -191,27 +249,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    /**
-     * Oculta las alertas generales.
-     */
     const ocultarAlertas = () => {
-        if (alertaErrorGeneral) {
-            alertaErrorGeneral.classList.add('d-none');
-        }
-        if (alertaExitoGeneral) {
-            alertaExitoGeneral.classList.add('d-none');
-        }
+        if (alertaErrorGeneral) alertaErrorGeneral.classList.add('d-none');
+        if (alertaExitoGeneral) alertaExitoGeneral.classList.add('d-none');
     };
 
-    /**
-     * Valida un campo de texto genérico para asegurar que no esté vacío.
-     * @param {HTMLInputElement} campo
-     * @param {HTMLElement} elementoError
-     * @param {string} mensaje
-     * @returns {boolean}
-     */
     const validarCampoRequerido = (campo, elementoError, mensaje) => {
-        if (campo.value.trim().length === 0) {
+        if (!campo || campo.value.trim().length === 0) {
             mostrarErrorCampo(campo, elementoError, mensaje);
             return false;
         }
@@ -219,10 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
     };
 
-    /**
-     * Controla el estado visual de carga en el botón de envío.
-     * @param {boolean} cargando
-     */
     const alternarEstadoCargando = (cargando) => {
         if (!botonRegistrarse) return;
         botonRegistrarse.disabled = cargando;
@@ -235,22 +275,36 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 5. Envío asíncrono y manejo de flujos alternos (Tarea 4.5)
+    // 6. Envío del formulario y validación integral
     // ─────────────────────────────────────────────────────────────────────────
     if (formularioRegistro) {
         formularioRegistro.addEventListener('submit', async (evento) => {
             evento.preventDefault();
             ocultarAlertas();
 
-            // Validación del lado del cliente
+            // Validación de campos del cliente
             const nombreValido = validarCampoRequerido(campoNombre, errorNombre, 'El nombre es obligatorio.');
             const apellidosValidos = validarCampoRequerido(campoApellidos, errorApellidos, 'Los apellidos son obligatorios.');
             const correoValido = validarCorreo();
             const telefonoValido = validarTelefono();
-            const contrasenaValida = validarCampoRequerido(campoContrasena, errorContrasena, 'La contraseña es obligatoria.');
+            const contrasenaValida = evaluarContrasena();
 
-            if (!nombreValido || !apellidosValidos || !correoValido || !telefonoValido || !contrasenaValida) {
-                mostrarAlertaGeneral('Por favor, completa todos los campos obligatorios.');
+            if (!contrasenaValida) {
+                mostrarErrorCampo(campoContrasena, errorContrasena, 'La contraseña debe tener mín. 8 caracteres, al menos 1 mayúscula y 1 número.');
+            }
+
+            let confirmacionValida = true;
+            if (campoConfirmarContrasena) {
+                if (campoConfirmarContrasena.value !== campoContrasena.value) {
+                    mostrarErrorCampo(campoConfirmarContrasena, errorConfirmarContrasena, 'Las contraseñas no coinciden.');
+                    confirmacionValida = false;
+                } else {
+                    limpiarErrorCampo(campoConfirmarContrasena, errorConfirmarContrasena);
+                }
+            }
+
+            if (!nombreValido || !apellidosValidos || !correoValido || !telefonoValido || !contrasenaValida || !confirmacionValida) {
+                mostrarAlertaGeneral('Por favor, completa todos los campos obligatorios correctamente.');
                 return;
             }
 
@@ -261,6 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 email: campoCorreo.value.trim(),
                 telefono: campoTelefono.value.trim(),
                 contrasena: campoContrasena.value,
+                confirmar_contrasena: campoConfirmarContrasena ? campoConfirmarContrasena.value : '',
                 calle: campoCalle ? campoCalle.value.trim() : '',
                 colonia: campoColonia ? campoColonia.value.trim() : '',
                 municipio: campoMunicipio ? campoMunicipio.value.trim() : '',
@@ -283,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const resultado = await respuesta.json();
 
                 if (respuesta.ok && resultado.exito) {
-                    // Éxito: Mostrar mensaje y redirigir
+                    // Éxito: retroalimentación visual y redirección
                     if (alertaExitoGeneral && mensajeExitoGeneral) {
                         mensajeExitoGeneral.textContent = resultado.mensaje || 'Registro exitoso. Redirigiendo...';
                         alertaExitoGeneral.classList.remove('d-none');
@@ -294,32 +349,46 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // Manejo de flujos alternos y errores según código de estado o mensaje
-                if (respuesta.status === 409 || (resultado.mensaje && resultado.mensaje.includes('correo'))) {
-                    // Flujo alterno: Correo duplicado (CA-HU4-001)
-                    const mensajeCorreo = 'El correo ingresado ya se encuentra registrado.';
-                    mostrarErrorCampo(campoCorreo, errorCorreo, mensajeCorreo);
-                    mostrarAlertaGeneral(mensajeCorreo);
+                // Manejo de flujos alternos y verificación en base de datos
+                if (resultado.campo === 'email' || (resultado.mensaje && resultado.mensaje.includes('correo'))) {
+                    // Validación en BD: Correo ya registrado
+                    const mensaje = 'El correo ingresado ya se encuentra registrado.';
+                    mostrarErrorCampo(campoCorreo, errorCorreo, mensaje);
+                    mostrarAlertaGeneral(mensaje);
                     campoCorreo.focus();
 
-                } else if (respuesta.status === 422 && resultado.mensaje && resultado.mensaje.includes('teléfono')) {
-                    // Flujo alterno: Teléfono inválido (CA-HU4-002)
-                    const mensajeTelefono = 'El teléfono debe contener 10 dígitos.';
-                    mostrarErrorCampo(campoTelefono, errorTelefono, mensajeTelefono);
-                    mostrarAlertaGeneral(mensajeTelefono);
+                } else if (resultado.campo === 'telefono' || (resultado.mensaje && resultado.mensaje.includes('teléfono'))) {
+                    // Validación en BD o formato: Teléfono ya registrado o inválido
+                    const mensaje = resultado.mensaje || 'El número de teléfono ya se encuentra registrado.';
+                    mostrarErrorCampo(campoTelefono, errorTelefono, mensaje);
+                    mostrarAlertaGeneral(mensaje);
                     campoTelefono.focus();
+
+                } else if (resultado.campo === 'nombre' || (resultado.mensaje && resultado.mensaje.includes('nombre y apellidos'))) {
+                    // Validación en BD: Nombre y apellidos ya registrados
+                    const mensaje = 'Ya existe un cliente registrado con este nombre y apellidos.';
+                    mostrarErrorCampo(campoNombre, errorNombre, mensaje);
+                    mostrarErrorCampo(campoApellidos, errorApellidos, mensaje);
+                    mostrarAlertaGeneral(mensaje);
+                    campoNombre.focus();
 
                 } else if (resultado.codigo === 'DIRECCION_FUERA_DE_ALCANCE' || (resultado.mensaje && resultado.mensaje.includes('fuera de alcance'))) {
                     // Flujo alterno: Dirección fuera de alcance
-                    const mensajeDireccion = 'La dirección está fuera de alcance.';
+                    const mensaje = 'La dirección está fuera de alcance.';
                     if (campoMunicipio) {
                         campoMunicipio.classList.add('is-invalid');
                         campoMunicipio.style.borderColor = '#DC2626';
                     }
-                    mostrarAlertaGeneral(mensajeDireccion);
+                    mostrarAlertaGeneral(mensaje);
+
+                } else if (resultado.campo === 'contrasena' || (resultado.mensaje && resultado.mensaje.includes('contraseña'))) {
+                    // Error de validación de contraseña
+                    mostrarErrorCampo(campoContrasena, errorContrasena, resultado.mensaje);
+                    mostrarAlertaGeneral(resultado.mensaje);
+                    campoContrasena.focus();
 
                 } else {
-                    // Error genérico o campos incompletos
+                    // Error genérico
                     mostrarAlertaGeneral(resultado.mensaje || 'Por favor, completa todos los campos obligatorios.');
                 }
 
