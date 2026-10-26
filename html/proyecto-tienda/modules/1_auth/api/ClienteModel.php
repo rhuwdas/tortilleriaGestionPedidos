@@ -129,4 +129,41 @@ class ClienteModel
         $cliente = $sentencia->fetch(PDO::FETCH_ASSOC);
         return $cliente !== false ? $cliente : null;
     }
+
+    /**
+     * Obtiene el perfil completo de un cliente, incluyendo el listado de sus direcciones registradas.
+     * Cumple con CA-003 para verificar la creación automática de perfil y dirección.
+     *
+     * @param int $idCliente Identificador único del cliente.
+     * @return array|null Datos del perfil y sus direcciones asociadas.
+     */
+    public function obtenerPerfilCliente(int $idCliente): ?array
+    {
+        $sentencia = $this->conexionBaseDatos->prepare(
+            'SELECT id_cliente, nombre, apellidos, razon_social, telefono, email, usuario, activo
+             FROM cliente
+             WHERE id_cliente = :id_cliente
+             LIMIT 1'
+        );
+        $sentencia->bindValue(':id_cliente', $idCliente, PDO::PARAM_INT);
+        $sentencia->execute();
+
+        $cliente = $sentencia->fetch(PDO::FETCH_ASSOC);
+        if (!$cliente) {
+            return null;
+        }
+
+        // Obtener direcciones vinculadas
+        $sentenciaDirecciones = $this->conexionBaseDatos->prepare(
+            'SELECT id_direccion, calle, colonia, municipio, codigo_postal, referencia
+             FROM direccion
+             WHERE id_cliente = :id_cliente
+             ORDER BY id_direccion DESC'
+        );
+        $sentenciaDirecciones->bindValue(':id_cliente', $idCliente, PDO::PARAM_INT);
+        $sentenciaDirecciones->execute();
+
+        $cliente['direcciones'] = $sentenciaDirecciones->fetchAll(PDO::FETCH_ASSOC);
+        return $cliente;
+    }
 }

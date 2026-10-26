@@ -140,11 +140,15 @@ try {
     $_SESSION['email_usuario'] = $email;
     $_SESSION['rol'] = 'Cliente';
 
+    // Obtener el perfil recién creado y su dirección asociada
+    $perfilCreado = $modeloCliente->obtenerPerfilCliente($idCliente);
+
     http_response_code(201);
     echo json_encode([
         'exito' => true,
         'mensaje' => 'Registro completado con éxito.',
         'id_cliente' => $idCliente,
+        'perfil' => $perfilCreado,
         'redireccion' => '/proyecto-tienda/modules/2_catalog/ui/catalogo.php'
     ], JSON_UNESCAPED_UNICODE);
     exit;
