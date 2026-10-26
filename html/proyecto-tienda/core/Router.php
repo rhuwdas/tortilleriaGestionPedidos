@@ -27,6 +27,7 @@ class Router
         '/'          => 'modules/1_auth/ui/login.php',
         '/login'     => 'modules/1_auth/ui/login.php',
         '/recuperar' => 'modules/1_auth/ui/recuperar.php',
+        '/registro'  => 'modules/1_auth/ui/registro.php',
     ];
 
     /**
@@ -72,9 +73,14 @@ class Router
      */
     public function despachar(): void
     {
-        // Obtener la ruta de la URL actual, eliminando la ruta base y los query strings
-        $uriCompleta = $_SERVER['REQUEST_URI'] ?? '/';
-        $ruta = '/' . trim(str_replace($this->rutaBase, '', parse_url($uriCompleta, PHP_URL_PATH)), '/');
+        // Obtener la ruta de la URL actual (soportando tanto path como parámetro ?ruta=)
+        if (!empty($_GET['ruta'])) {
+            $ruta = '/' . ltrim($_GET['ruta'], '/');
+        } else {
+            $uriCompleta = $_SERVER['REQUEST_URI'] ?? '/';
+            $ruta = '/' . trim(str_replace($this->rutaBase, '', parse_url($uriCompleta, PHP_URL_PATH)), '/');
+            $ruta = str_replace('/index.php', '', $ruta);
+        }
 
         // Normalizar: ruta vacía equivale a la raíz
         if ($ruta === '' || $ruta === '//') {

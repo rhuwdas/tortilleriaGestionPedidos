@@ -176,12 +176,23 @@ if (!empty($_SESSION['id_usuario'])) {
                 </div>
 
                 <!-- Enlace a recuperación de contraseña -->
-                <div class="text-center">
+                <div class="text-center mb-2">
                     <a
                         href="/proyecto-tienda/modules/1_auth/ui/recuperar.php"
                         class="link-secondary small"
                     >
                         ¿Olvidaste tu contraseña?
+                    </a>
+                </div>
+
+                <!-- Enlace a registro de nuevo cliente (HU4) -->
+                <div class="text-center pt-2 border-top">
+                    <span class="text-muted small">¿No tienes cuenta?</span>
+                    <a
+                        href="/proyecto-tienda/modules/1_auth/ui/registro.php"
+                        class="link-primary small fw-semibold ms-1"
+                    >
+                        Regístrate aquí
                     </a>
                 </div>
 
