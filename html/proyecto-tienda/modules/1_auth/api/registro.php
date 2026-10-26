@@ -98,6 +98,23 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 3.5 Validación de cobertura de dirección de entrega (flujo alterno)
+// ─────────────────────────────────────────────────────────────────────────────
+if ($calle !== '' && $municipio !== '') {
+    $municipiosCobertura = ['oaxaca', 'toluca', 'metepec', 'zinacantepec', 'san mateo atenco', 'lerma', 'centro'];
+    $municipioNormalizado = mb_strtolower(trim($municipio), 'UTF-8');
+    if (!in_array($municipioNormalizado, $municipiosCobertura, true)) {
+        http_response_code(422);
+        echo json_encode([
+            'exito' => false,
+            'mensaje' => 'La dirección está fuera de alcance.',
+            'codigo' => 'DIRECCION_FUERA_DE_ALCANCE'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 4. Verificación de unicidad de correo electrónico en BD (CA-HU4-001)
 // ─────────────────────────────────────────────────────────────────────────────
 try {

@@ -2,12 +2,18 @@
  * modules/1_auth/ui/registroService.js
  *
  * Servicio de validación e interacción para el registro de clientes (HU4).
- * Responsabilidades (Tarea 4.2):
+ * Responsabilidades (Tareas 4.2 y 4.5):
  *  1. Restringir estrictamente la entrada del teléfono a 10 dígitos numéricos.
  *  2. Validar en tiempo real y al enviar el formato del correo electrónico.
  *  3. Validar presencia de campos requeridos (nombre, apellidos, contraseña).
  *  4. Alternar la visibilidad de la contraseña.
- *  5. Gestionar la presentación visual accesible de errores en la interfaz.
+ *  5. Enviar la petición POST asíncrona mediante Fetch API.
+ *  6. Gestionar el manejo de errores en interfaz para los flujos alternos:
+ *     - Correo duplicado ("El correo ingresado ya se encuentra registrado") (CA-HU4-001).
+ *     - Teléfono inválido ("El teléfono debe contener 10 dígitos") (CA-HU4-002).
+ *     - Dirección fuera de alcance ("La dirección está fuera de alcance").
+ *     - Campos faltantes ("Por favor, completa todos los campos obligatorios.").
+ *  7. Manejar el estado de carga y retroalimentación de éxito (CA-003).
  *
  * Restricciones (AGENTS.md):
  *  - JavaScript Vanilla ES6+ sin librerías externas.
@@ -29,8 +35,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const botonVisibilidadContrasena = document.getElementById('boton-visibilidad-contrasena');
     const iconoVisibilidadContrasena = document.getElementById('icono-visibilidad-contrasena');
     const botonRegistrarse = document.getElementById('boton-registrarse');
+    const spinnerRegistro = document.getElementById('spinner-registro');
+    const textoBotonRegistrarse = document.getElementById('texto-boton-registrarse');
 
-    // Mensajes de error en línea
+    // Campos de dirección opcional
+    const campoCalle = document.getElementById('campo-calle');
+    const campoColonia = document.getElementById('campo-colonia');
+    const campoMunicipio = document.getElementById('campo-municipio');
+    const campoCodigoPostal = document.getElementById('campo-codigo-postal');
+    const campoReferencia = document.getElementById('campo-referencia');
+
+    // Mensajes de error y alertas
     const errorNombre = document.getElementById('error-nombre');
     const errorApellidos = document.getElementById('error-apellidos');
     const errorCorreo = document.getElementById('error-correo');
@@ -38,6 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorContrasena = document.getElementById('error-contrasena');
     const alertaErrorGeneral = document.getElementById('alerta-error-general');
     const mensajeErrorGeneral = document.getElementById('mensaje-error-general');
+    const alertaExitoGeneral = document.getElementById('alerta-exito-general');
+    const mensajeExitoGeneral = document.getElementById('mensaje-exito-general');
 
     // Expresión regular estándar para validación estricta de correo electrónico
     const expresionCorreo = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -163,6 +180,30 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     /**
+     * Muestra la alerta de error general superior.
+     * @param {string} mensaje
+     */
+    const mostrarAlertaGeneral = (mensaje) => {
+        if (alertaErrorGeneral && mensajeErrorGeneral) {
+            mensajeErrorGeneral.textContent = mensaje;
+            alertaErrorGeneral.classList.remove('d-none');
+            alertaErrorGeneral.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    };
+
+    /**
+     * Oculta las alertas generales.
+     */
+    const ocultarAlertas = () => {
+        if (alertaErrorGeneral) {
+            alertaErrorGeneral.classList.add('d-none');
+        }
+        if (alertaExitoGeneral) {
+            alertaExitoGeneral.classList.add('d-none');
+        }
+    };
+
+    /**
      * Valida un campo de texto genérico para asegurar que no esté vacío.
      * @param {HTMLInputElement} campo
      * @param {HTMLElement} elementoError
@@ -178,18 +219,30 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
     };
 
+    /**
+     * Controla el estado visual de carga en el botón de envío.
+     * @param {boolean} cargando
+     */
+    const alternarEstadoCargando = (cargando) => {
+        if (!botonRegistrarse) return;
+        botonRegistrarse.disabled = cargando;
+        if (spinnerRegistro) {
+            spinnerRegistro.classList.toggle('d-none', !cargando);
+        }
+        if (textoBotonRegistrarse) {
+            textoBotonRegistrarse.textContent = cargando ? 'Registrando...' : 'Registrarse';
+        }
+    };
+
     // ─────────────────────────────────────────────────────────────────────────
-    // 5. Validación integral previa al envío del formulario
+    // 5. Envío asíncrono y manejo de flujos alternos (Tarea 4.5)
     // ─────────────────────────────────────────────────────────────────────────
     if (formularioRegistro) {
-        formularioRegistro.addEventListener('submit', (evento) => {
+        formularioRegistro.addEventListener('submit', async (evento) => {
             evento.preventDefault();
+            ocultarAlertas();
 
-            // Ocultar alerta general previa
-            if (alertaErrorGeneral) {
-                alertaErrorGeneral.classList.add('d-none');
-            }
-
+            // Validación del lado del cliente
             const nombreValido = validarCampoRequerido(campoNombre, errorNombre, 'El nombre es obligatorio.');
             const apellidosValidos = validarCampoRequerido(campoApellidos, errorApellidos, 'Los apellidos son obligatorios.');
             const correoValido = validarCorreo();
@@ -197,16 +250,85 @@ document.addEventListener('DOMContentLoaded', () => {
             const contrasenaValida = validarCampoRequerido(campoContrasena, errorContrasena, 'La contraseña es obligatoria.');
 
             if (!nombreValido || !apellidosValidos || !correoValido || !telefonoValido || !contrasenaValida) {
-                if (alertaErrorGeneral && mensajeErrorGeneral) {
-                    mensajeErrorGeneral.textContent = 'Por favor, completa todos los campos obligatorios correctamente.';
-                    alertaErrorGeneral.classList.remove('d-none');
-                }
+                mostrarAlertaGeneral('Por favor, completa todos los campos obligatorios.');
                 return;
             }
 
-            // Los datos son válidos del lado del cliente.
-            // La conexión con el endpoint backend se desarrolla en las siguientes tareas (4.3 / 4.4).
-            console.log('Validación en cliente exitosa. Listo para enviar al endpoint backend.');
+            // Preparar carga útil (payload)
+            const cargaUtil = {
+                nombre: campoNombre.value.trim(),
+                apellidos: campoApellidos.value.trim(),
+                email: campoCorreo.value.trim(),
+                telefono: campoTelefono.value.trim(),
+                contrasena: campoContrasena.value,
+                calle: campoCalle ? campoCalle.value.trim() : '',
+                colonia: campoColonia ? campoColonia.value.trim() : '',
+                municipio: campoMunicipio ? campoMunicipio.value.trim() : '',
+                codigo_postal: campoCodigoPostal ? campoCodigoPostal.value.trim() : '',
+                referencia: campoReferencia ? campoReferencia.value.trim() : ''
+            };
+
+            alternarEstadoCargando(true);
+
+            try {
+                const respuesta = await fetch('/proyecto-tienda/modules/1_auth/api/registro.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json; charset=UTF-8',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(cargaUtil)
+                });
+
+                const resultado = await respuesta.json();
+
+                if (respuesta.ok && resultado.exito) {
+                    // Éxito: Mostrar mensaje y redirigir
+                    if (alertaExitoGeneral && mensajeExitoGeneral) {
+                        mensajeExitoGeneral.textContent = resultado.mensaje || 'Registro exitoso. Redirigiendo...';
+                        alertaExitoGeneral.classList.remove('d-none');
+                    }
+                    setTimeout(() => {
+                        window.location.href = resultado.redireccion || '/proyecto-tienda/modules/2_catalog/ui/catalogo.php';
+                    }, 1200);
+                    return;
+                }
+
+                // Manejo de flujos alternos y errores según código de estado o mensaje
+                if (respuesta.status === 409 || (resultado.mensaje && resultado.mensaje.includes('correo'))) {
+                    // Flujo alterno: Correo duplicado (CA-HU4-001)
+                    const mensajeCorreo = 'El correo ingresado ya se encuentra registrado.';
+                    mostrarErrorCampo(campoCorreo, errorCorreo, mensajeCorreo);
+                    mostrarAlertaGeneral(mensajeCorreo);
+                    campoCorreo.focus();
+
+                } else if (respuesta.status === 422 && resultado.mensaje && resultado.mensaje.includes('teléfono')) {
+                    // Flujo alterno: Teléfono inválido (CA-HU4-002)
+                    const mensajeTelefono = 'El teléfono debe contener 10 dígitos.';
+                    mostrarErrorCampo(campoTelefono, errorTelefono, mensajeTelefono);
+                    mostrarAlertaGeneral(mensajeTelefono);
+                    campoTelefono.focus();
+
+                } else if (resultado.codigo === 'DIRECCION_FUERA_DE_ALCANCE' || (resultado.mensaje && resultado.mensaje.includes('fuera de alcance'))) {
+                    // Flujo alterno: Dirección fuera de alcance
+                    const mensajeDireccion = 'La dirección está fuera de alcance.';
+                    if (campoMunicipio) {
+                        campoMunicipio.classList.add('is-invalid');
+                        campoMunicipio.style.borderColor = '#DC2626';
+                    }
+                    mostrarAlertaGeneral(mensajeDireccion);
+
+                } else {
+                    // Error genérico o campos incompletos
+                    mostrarAlertaGeneral(resultado.mensaje || 'Por favor, completa todos los campos obligatorios.');
+                }
+
+            } catch (error) {
+                console.error('Error en la petición de registro:', error);
+                mostrarAlertaGeneral('No se pudo establecer conexión con el servidor. Intenta de nuevo.');
+            } finally {
+                alternarEstadoCargando(false);
+            }
         });
     }
 
