@@ -47,6 +47,20 @@ class Router
     ];
 
     /**
+     * @var array<string, array<int, string>> Roles autorizados por ruta.
+     *                                        Las rutas no listadas solo requieren sesión.
+     *                                        Los nombres se comparan en minúsculas.
+     */
+    private array $rolesPorRuta = [
+        '/catalogo'    => ['cliente'],
+        '/ecommerce'   => ['cliente'],
+        '/mis-pedidos' => ['cliente'],
+        '/pos'         => ['vendedor', 'cajero'],
+        '/caja'        => ['vendedor', 'cajero'],
+        '/logistica'   => ['repartidor'],
+    ];
+
+    /**
      * @var string Ruta base del proyecto dentro del servidor web.
      *             Permite ajustar el enrutador si el proyecto no está en la raíz.
      */
@@ -67,7 +81,7 @@ class Router
      * Flujo:
      *  1. Obtiene la URI actual y la limpia.
      *  2. Si la ruta es pública, incluye el archivo directamente.
-     *  3. Si la ruta es protegida, verifica sesión activa antes de incluir.
+     *  3. Si la ruta es protegida, verifica sesión y rol antes de incluir.
      *  4. Si la ruta no existe, redirige al login (comportamiento seguro por defecto).
      *
      * @return void
@@ -99,6 +113,8 @@ class Router
         if (array_key_exists($ruta, $this->rutasProtegidas)) {
             // Verificar que exista una sesión activa antes de servir la vista
             $this->verificarSesion();
+            // Verificar que el rol de la sesión tenga permiso sobre la ruta
+            $this->verificarPermiso($ruta);
             $archivoDestino = __DIR__ . '/../' . $this->rutasProtegidas[$ruta];
             $this->incluirArchivo($archivoDestino);
             return;
@@ -149,6 +165,82 @@ class Router
         if (empty($_SESSION['id_usuario'])) {
             $this->redirigir('/login');
         }
+    }
+
+    /**
+     * Verifica que el rol de la sesión esté autorizado para la ruta solicitada.
+     *
+     * Las rutas sin restricción de rol solo requieren una sesión válida. Las
+     * cuentas de repartidor además deben tener un registro vinculado, y las de
+     * ventas un id_empleado válido, para evitar sesiones incompletas.
+     *
+     * @param string $ruta Ruta URL solicitada.
+     * @return void
+     */
+    private function verificarPermiso(string $ruta): void
+    {
+        if (!isset($this->rolesPorRuta[$ruta])) {
+            return;
+        }
+
+        $rol = $this->obtenerRolNormalizado();
+
+        if (!in_array($rol, $this->rolesPorRuta[$ruta], true)) {
+            $this->denegarAcceso();
+        }
+
+        if ($rol === 'repartidor' && (int)($_SESSION['id_repartidor'] ?? 0) <= 0) {
+            $this->denegarAcceso();
+        }
+
+        if (in_array($rol, ['vendedor', 'cajero'], true) && (int)($_SESSION['id_empleado'] ?? 0) <= 0) {
+            $this->denegarAcceso();
+        }
+
+        if ($rol === 'cliente' && (int)($_SESSION['id_cliente'] ?? 0) <= 0) {
+            $this->denegarAcceso();
+        }
+    }
+
+    /**
+     * Obtiene el rol de la sesión en minúsculas y sin espacios.
+     *
+     * @return string Rol normalizado (cliente, vendedor, cajero, repartidor, etc.).
+     */
+    private function obtenerRolNormalizado(): string
+    {
+        $rol = strtolower(trim((string)($_SESSION['rol'] ?? '')));
+
+        if ($rol === 'cliente' || ($_SESSION['tipo_usuario'] ?? '') === 'cliente') {
+            return 'cliente';
+        }
+
+        return $rol;
+    }
+
+    /**
+     * Responde con HTTP 403 cuando la sesión no tiene permiso sobre la ruta.
+     *
+     * @return never
+     */
+    private function denegarAcceso(): never
+    {
+        http_response_code(403);
+        header('Content-Type: text/html; charset=UTF-8');
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+
+        $inicio = htmlspecialchars($this->rutaBase . '/', ENT_QUOTES, 'UTF-8');
+
+        echo '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">'
+            . '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+            . '<title>Acceso denegado — Tortillería</title></head><body>'
+            . '<main style="max-width:640px;margin:10vh auto;font-family:Arial,sans-serif;padding:0 1rem;">'
+            . '<h1>403 — Acceso denegado</h1>'
+            . '<p>Tu cuenta no tiene permisos para acceder a esta sección.</p>'
+            . '<p><a href="' . $inicio . '">Volver al inicio</a></p>'
+            . '</main></body></html>';
+
+        exit;
     }
 
     /**

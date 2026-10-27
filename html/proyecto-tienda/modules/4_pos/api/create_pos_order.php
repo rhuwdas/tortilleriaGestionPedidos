@@ -9,6 +9,7 @@ header('Content-Type: application/json; charset=UTF-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 
 require_once __DIR__ . '/PosModel.php';
+require_once __DIR__ . '/../../../core/MunicipiosCobertura.php';
 
 function responderCrearPedidoPos(bool $exito, string $mensaje, array $datos = [], int $codigo = 200): never
 {
@@ -53,7 +54,14 @@ if (
 	$tipoEntrega === 'Domicilio'
 	&& (!is_array($direccion) || trim((string)($direccion['calle'] ?? '')) === '' || trim((string)($direccion['municipio'] ?? '')) === '')
 ) {
-	responderCrearPedidoPos(false, 'Para entrega a domicilio captura calle y municipio.', [], 422);
+	responderCrearPedidoPos(false, 'Para entrega a domicilio captura la calle y selecciona el municipio.', [], 422);
+}
+if (
+	$tipoEntrega === 'Domicilio'
+	&& is_array($direccion)
+	&& !municipioTieneCobertura((string)($direccion['municipio'] ?? ''))
+) {
+	responderCrearPedidoPos(false, 'El municipio está fuera de la cobertura de entrega (solo municipios cercanos a Xoxocotlán, Oaxaca).', [], 422);
 }
 if (!is_array($items) || $items === []) {
 	responderCrearPedidoPos(false, 'Agrega al menos un producto al pedido.', [], 422);
@@ -108,7 +116,8 @@ try {
 		'numero_pedido' => 'PED-' . str_pad((string)$idPedido, 6, '0', STR_PAD_LEFT),
 	], 201);
 } catch (ExistenciasInsuficientesException $error) {
-	responderCrearPedidoPos(false, implode(' ', $error->obtenerErrores()), [], 422);
+	error_log('create_pos_order.php — inventario insuficiente: ' . $error->getMessage());
+	responderCrearPedidoPos(false, EcommerceModel::MENSAJE_INVENTARIO_INSUFICIENTE, [], 422);
 } catch (InvalidArgumentException $error) {
 	responderCrearPedidoPos(false, $error->getMessage(), [], 422);
 } catch (Throwable $error) {

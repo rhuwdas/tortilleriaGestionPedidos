@@ -53,6 +53,9 @@ Desktop.ini
 config.local.php
 config.local.js
 
+# --- Credenciales locales de prueba (no versionar) ---
+credenciales_prueba.txt
+
 # --- Documentación interna y directivas de agentes ---
 /html/docs/
 /html/agents.md

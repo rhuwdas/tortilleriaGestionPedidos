@@ -43,10 +43,16 @@ $tipoEntrega = $datosEntrada['tipo_entrega'] ?? 'Domicilio';
 $fechaHoraEntrada = $datosEntrada['fecha_hora_entrega_solicitada'] ?? '';
 $direccion = $datosEntrada['direccion'] ?? null;
 $idDireccionGuardada = $datosEntrada['id_direccion'] ?? null;
+$esRecogidaLocal = $tipoEntrega === 'Recoger en local';
 
 if (!is_string($fechaHoraEntrada)) {
     http_response_code(422);
-    echo json_encode(['exito' => false, 'mensaje' => 'La fecha y hora de entrega no son válidas'], JSON_UNESCAPED_UNICODE);
+    echo json_encode([
+        'exito' => false,
+        'mensaje' => $esRecogidaLocal
+            ? 'La fecha y hora de recogida no son válidas.'
+            : 'La fecha y hora de entrega no son válidas.'
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -78,7 +84,9 @@ if (!$fechaHoraEntrega || $fechaHoraEntrega <= new DateTimeImmutable()) {
     http_response_code(422);
     echo json_encode([
         'exito' => false,
-        'mensaje' => 'Selecciona una fecha y hora de entrega futura entre 07:00 y 17:00.',
+        'mensaje' => $esRecogidaLocal
+            ? 'Selecciona una fecha y hora de recogida futura entre 07:00 y 17:00.'
+            : 'Selecciona una fecha y hora de entrega futura entre 07:00 y 17:00.',
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -88,7 +96,9 @@ if ($minutosEntrega < 420 || $minutosEntrega > 1020) {
     http_response_code(422);
     echo json_encode([
         'exito' => false,
-        'mensaje' => 'La hora de entrega debe estar dentro del horario de 07:00 a 17:00.',
+        'mensaje' => $esRecogidaLocal
+            ? 'La hora de recogida en local debe estar dentro del horario de 07:00 a 17:00 hrs.'
+            : 'La hora de entrega debe estar dentro del horario de 07:00 a 17:00.',
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -113,8 +123,10 @@ try {
     if (!$validacion['valido']) {
         http_response_code(422);
         echo json_encode([
-            'exito' => false, 
-            'mensaje' => implode(', ', $validacion['errores'])
+            'exito' => false,
+            'mensaje' => !empty($validacion['inventario_insuficiente'])
+                ? EcommerceModel::MENSAJE_INVENTARIO_INSUFICIENTE
+                : implode(', ', $validacion['errores'])
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -163,11 +175,13 @@ try {
     ], JSON_UNESCAPED_UNICODE);
     
 } catch (ExistenciasInsuficientesException $error) {
-    // El inventario cambió entre la pre-validación y la confirmación transaccional
+    // El inventario cambió entre la pre-validación y la confirmación transaccional.
+    // Al cliente se le muestra un mensaje genérico, sin detalles de inventario.
+    error_log('create_online_order.php — inventario insuficiente: ' . $error->getMessage());
     http_response_code(422);
     echo json_encode([
         'exito' => false,
-        'mensaje' => implode(' ', $error->obtenerErrores())
+        'mensaje' => EcommerceModel::MENSAJE_INVENTARIO_INSUFICIENTE
     ], JSON_UNESCAPED_UNICODE);
 } catch (Exception $error) {
     error_log('Error al crear pedido: ' . $error->getMessage());

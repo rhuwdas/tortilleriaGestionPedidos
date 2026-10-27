@@ -7,6 +7,7 @@
  *  - Mostrar el estado actual en tiempo real mediante actualización periódica.
  *  - Renderizar el detalle de productos, totales y dirección de entrega.
  *  - Emitir el evento "pedido:repetir" para recargar los productos en el carrito.
+ *  - Permitir cancelar el pedido mientras siga Pendiente (aún no esté En Proceso).
  *
  * Restricciones (AGENTS.md):
  *  - JavaScript desacoplado del HTML, cargado con defer.
@@ -95,6 +96,106 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function formatearFechaPaso(valor) {
+        if (!valor) {
+            return '';
+        }
+
+        const fecha = new Date(String(valor).replace(' ', 'T'));
+        if (Number.isNaN(fecha.getTime())) {
+            return '';
+        }
+
+        return fecha.toLocaleString('es-MX', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    /**
+     * Dibuja la línea de tiempo del pedido:
+     * Pendiente → En Proceso → En Ruta → Entregado / Cancelado.
+     */
+    function crearLineaTiempoPedido(pedido) {
+        const pasosNormales = ['Pendiente', 'En Proceso', 'En Ruta', 'Entregado'];
+        const estaCancelado = pedido.estado === 'Cancelado';
+        const pasos = estaCancelado
+            ? ['Pendiente', 'En Proceso', 'En Ruta', 'Cancelado']
+            : pasosNormales;
+        const indiceActual = pasos.indexOf(pedido.estado);
+
+        const linea = crearElemento('div', 'linea-tiempo-pedido');
+        linea.setAttribute('role', 'list');
+        linea.setAttribute('aria-label', `Línea de tiempo del pedido: ${pedido.estado}`);
+
+        pasos.forEach((paso, indice) => {
+            const item = crearElemento('div', 'paso-tiempo');
+            item.setAttribute('role', 'listitem');
+
+            let estadoPaso = 'pendiente';
+            if (estaCancelado) {
+                const completado = indice === 0
+                    || (indice === 1 && Boolean(pedido.fecha_aceptacion))
+                    || (indice === 2 && Boolean(pedido.fecha_entrega));
+
+                if (indice === pasos.length - 1) {
+                    estadoPaso = 'cancelado actual';
+                } else if (completado) {
+                    estadoPaso = 'completado';
+                }
+            } else if (indice < indiceActual) {
+                estadoPaso = 'completado';
+            } else if (indice === indiceActual) {
+                estadoPaso = indice === pasos.length - 1 ? 'completado actual' : 'actual';
+            }
+
+            estadoPaso.split(' ').forEach((clase) => item.classList.add(clase));
+            if (estadoPaso.includes('actual')) {
+                item.setAttribute('aria-current', 'step');
+            }
+
+            const marcador = crearElemento('span', 'marcador-tiempo');
+            if (estadoPaso.includes('completado')) {
+                marcador.appendChild(crearElemento('i', 'bi bi-check-lg'));
+            } else if (estadoPaso.includes('cancelado')) {
+                marcador.appendChild(crearElemento('i', 'bi bi-x-lg'));
+            }
+            item.appendChild(marcador);
+            item.appendChild(crearElemento('span', 'etiqueta-tiempo', paso));
+
+            let fechaPaso = '';
+            if (paso === 'Pendiente') {
+                fechaPaso = pedido.fecha_pedido;
+            } else if (paso === 'En Proceso') {
+                fechaPaso = pedido.fecha_aceptacion;
+            } else if (paso === 'Entregado') {
+                fechaPaso = pedido.fecha_entrega;
+            } else if (paso === 'Cancelado') {
+                fechaPaso = pedido.fecha_cancelacion;
+            }
+
+            const fechaFormateada = formatearFechaPaso(fechaPaso);
+            if (fechaFormateada) {
+                item.appendChild(crearElemento('span', 'fecha-tiempo', fechaFormateada));
+            }
+
+            linea.appendChild(item);
+        });
+
+        return linea;
+    }
+
+    /**
+     * Indica si el cliente puede cancelar el pedido desde el seguimiento.
+     * Solo se permite mientras el pedido siga Pendiente, antes de que el
+     * personal lo acepte y lo pase a En Proceso.
+     */
+    function puedeCancelarPedido(pedido) {
+        return pedido.estado === 'Pendiente';
+    }
+
     /**
      * Convierte un pedido en una tarjeta visual con su estado y acciones.
      */
@@ -123,6 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         encabezado.append(bloqueInformacion, insigniaEstado);
         tarjeta.appendChild(encabezado);
+        tarjeta.appendChild(crearLineaTiempoPedido(pedido));
 
         const tipoEntrega = crearElemento(
             'div',
@@ -132,6 +234,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 : `Tipo de entrega: ${pedido.tipo_entrega}`
         );
         tarjeta.appendChild(tipoEntrega);
+
+        if (pedido.tipo_entrega === 'Domicilio' && pedido.direccion_completa) {
+            const bloqueMapa = crearElemento('div', 'mapa-pedido');
+            const botonMapa = crearElemento('button', 'btn btn-sm btn-outline-primary boton-mapa-pedido');
+            botonMapa.type = 'button';
+            botonMapa.setAttribute('aria-expanded', 'false');
+            botonMapa.appendChild(crearElemento('i', 'bi bi-map me-1'));
+            const etiquetaMapa = crearElemento('span', '', 'Ver mapa de entrega');
+            botonMapa.appendChild(etiquetaMapa);
+
+            const contenedorMapa = crearElemento('div', 'mapa-pedido-contenedor d-none');
+            botonMapa.addEventListener('click', () => {
+                const seMostrara = contenedorMapa.classList.contains('d-none');
+
+                if (seMostrara && contenedorMapa.dataset.cargado !== '1') {
+                    const marcoMapa = document.createElement('iframe');
+                    marcoMapa.title = `Mapa de entrega del pedido ${pedido.numero_pedido}`;
+                    marcoMapa.loading = 'lazy';
+                    marcoMapa.referrerPolicy = 'no-referrer-when-downgrade';
+                    marcoMapa.src = `https://www.google.com/maps?q=${encodeURIComponent(pedido.direccion_completa)}&hl=es&z=16&output=embed`;
+                    contenedorMapa.appendChild(marcoMapa);
+                    contenedorMapa.dataset.cargado = '1';
+                }
+
+                contenedorMapa.classList.toggle('d-none', !seMostrara);
+                botonMapa.setAttribute('aria-expanded', String(seMostrara));
+                etiquetaMapa.textContent = seMostrara ? 'Ocultar mapa' : 'Ver mapa de entrega';
+            });
+
+            bloqueMapa.append(botonMapa, contenedorMapa);
+            tarjeta.appendChild(bloqueMapa);
+        }
 
         if (pedido.estado === 'Cancelado' && pedido.motivo_rechazo) {
             tarjeta.appendChild(
@@ -176,9 +310,49 @@ document.addEventListener('DOMContentLoaded', () => {
         botonRepetir.addEventListener('click', () => repetirPedido(pedido));
 
         pie.append(total, botonRepetir);
+
+        if (puedeCancelarPedido(pedido)) {
+            const botonCancelar = crearElemento('button', 'btn btn-sm btn-outline-danger');
+            botonCancelar.type = 'button';
+            botonCancelar.setAttribute('aria-label', `Cancelar el pedido ${pedido.numero_pedido}`);
+            botonCancelar.appendChild(crearElemento('i', 'bi bi-x-circle me-1'));
+            botonCancelar.appendChild(document.createTextNode('Cancelar pedido'));
+            botonCancelar.addEventListener('click', () => cancelarPedidoCliente(pedido, botonCancelar));
+            pie.appendChild(botonCancelar);
+        }
+
         tarjeta.appendChild(pie);
 
         return tarjeta;
+    }
+
+    /**
+     * Cancela un pedido del cliente desde el seguimiento.
+     * El backend solo lo permite si aún está Pendiente.
+     */
+    async function cancelarPedidoCliente(pedido, botonCancelar) {
+        const confirmado = window.confirm(
+            `¿Seguro que deseas cancelar el pedido ${pedido.numero_pedido}? Esta acción no se puede deshacer.`
+        );
+
+        if (!confirmado) {
+            return;
+        }
+
+        botonCancelar.disabled = true;
+
+        try {
+            const respuesta = await ApiManager.publicar(
+                '/modules/3_ecommerce/api/cancel_client_order.php',
+                { id_pedido: pedido.id_pedido }
+            );
+
+            await cargarPedidos();
+            mostrarAlerta(respuesta.mensaje || 'Pedido cancelado correctamente.', 'success');
+        } catch (error) {
+            botonCancelar.disabled = false;
+            mostrarAlerta(error.message || 'No se pudo cancelar el pedido.');
+        }
     }
 
     /**

@@ -123,6 +123,15 @@ body {
     justify-content: flex-end;
 }
 
+.buscador-bandeja {
+    flex: 1 1 260px;
+    max-width: 340px;
+}
+
+.buscador-bandeja .form-control {
+    min-width: 220px;
+}
+
 .contador-pedidos {
     padding: 8px 12px;
     background: #e3ebe5;
@@ -291,6 +300,7 @@ body {
 }
 
 .pedido-acciones {
+    flex-wrap: wrap;
     justify-content: flex-end;
     margin-top: 14px;
 }
@@ -338,6 +348,11 @@ body {
 
     .controles-bandeja {
         justify-content: flex-start;
+    }
+
+    .buscador-bandeja {
+        flex-basis: 100%;
+        max-width: none;
     }
 
     .usuario-activo {

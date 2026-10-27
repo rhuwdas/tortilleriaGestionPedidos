@@ -22,9 +22,19 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Redirigir si ya existe una sesión activa
 if (!empty($_SESSION['id_usuario']) || !empty($_SESSION['id_cliente'])) {
-    header('Location: /proyecto-tienda/?ruta=/catalogo');
+    $rolSesion = strtolower(trim((string)($_SESSION['rol'] ?? '')));
+    $rutaInicio = match ($rolSesion) {
+        'cliente'              => '/catalogo',
+        'vendedor', 'cajero'   => '/pos',
+        'repartidor'           => '/logistica',
+        default                => '/dashboard',
+    };
+
+    header('Location: /proyecto-tienda/?ruta=' . $rutaInicio);
     exit;
 }
+
+require_once __DIR__ . '/../../../core/MunicipiosCobertura.php';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -272,14 +282,22 @@ if (!empty($_SESSION['id_usuario']) || !empty($_SESSION['id_cliente'])) {
                         </div>
                         <div class="col-sm-6">
                             <label for="campo-municipio" class="etiqueta-formulario">Municipio</label>
-                            <input
-                                type="text"
+                            <select
                                 id="campo-municipio"
                                 name="municipio"
-                                class="form-control control-formulario"
-                                placeholder="Ej. Toluca"
-                                maxlength="100"
+                                class="form-select control-formulario"
+                                aria-describedby="ayuda-municipio"
                             >
+                                <option value="">Selecciona un municipio</option>
+                                <?php foreach (obtenerMunicipiosCobertura() as $municipioCobertura): ?>
+                                    <option value="<?= htmlspecialchars($municipioCobertura, ENT_QUOTES, 'UTF-8') ?>">
+                                        <?= htmlspecialchars($municipioCobertura, ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div id="ayuda-municipio" class="form-text">
+                                Municipios cercanos a Xoxocotlán, Oaxaca.
+                            </div>
                         </div>
                     </div>
 

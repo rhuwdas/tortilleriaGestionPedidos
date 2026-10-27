@@ -9,6 +9,7 @@
  *  - CA-001: Despliegue del estado actual del pedido.
  *  - CA-002: Aislamiento del historial por cliente autenticado.
  *  - CA-003: Datos completos del pedido para la acción "Repetir pedido".
+ *  - Cancelación del pedido por el cliente mientras no esté "En Proceso".
  *  - Actualización del estado visible al cambiar en la base de datos.
  *
  * Ejecución:
@@ -27,7 +28,7 @@ $archivoCookiesA = sys_get_temp_dir() . "/hu6_cookies_a_{$sufijo}.txt";
 $archivoCookiesB = sys_get_temp_dir() . "/hu6_cookies_b_{$sufijo}.txt";
 
 $exitos = 0;
-$totalPruebas = 7;
+$totalPruebas = 10;
 $pedidosCreados = [];
 $clientesCreados = [];
 
@@ -343,6 +344,104 @@ try {
         $exitos++;
     } else {
         echo "  -> FALLO: Código HTTP {$codigoSinSesion}, Respuesta: {$crudoSinSesion}\n";
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Prueba 8: un cliente no puede cancelar el pedido de otro
+    // ─────────────────────────────────────────────────────────────────────────
+    echo "\n[PRUEBA 8] Verificando que un cliente no pueda cancelar un pedido ajeno...\n";
+
+    [$codigoCancelarAjeno, $respuestaCancelarAjeno, $crudoCancelarAjeno] = peticionJson(
+        $baseUrl . '/modules/3_ecommerce/api/cancel_client_order.php',
+        'POST',
+        ['id_pedido' => $idPedidoB],
+        $archivoCookiesA,
+        ['X-Requested-With: XMLHttpRequest']
+    );
+
+    $consultaPedidoB = $pdo->prepare('SELECT estado FROM pedido WHERE id_pedido = :id_pedido');
+    $consultaPedidoB->execute([':id_pedido' => $idPedidoB]);
+
+    if (
+        $codigoCancelarAjeno === 404
+        && empty($respuestaCancelarAjeno['exito'])
+        && $consultaPedidoB->fetchColumn() === 'Pendiente'
+    ) {
+        echo "  -> ÉXITO: El pedido ajeno no se canceló (HTTP 404).\n";
+        $exitos++;
+    } else {
+        echo "  -> FALLO: Código HTTP {$codigoCancelarAjeno}, Respuesta: {$crudoCancelarAjeno}\n";
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Prueba 9: el cliente cancela su pedido pendiente
+    // ─────────────────────────────────────────────────────────────────────────
+    echo "\n[PRUEBA 9] Verificando la cancelación de un pedido pendiente por el cliente...\n";
+
+    [$codigoCancelarB, $respuestaCancelarB, $crudoCancelarB] = peticionJson(
+        $baseUrl . '/modules/3_ecommerce/api/cancel_client_order.php',
+        'POST',
+        ['id_pedido' => $idPedidoB],
+        $archivoCookiesB,
+        ['X-Requested-With: XMLHttpRequest']
+    );
+
+    $consultaCanceladoB = $pdo->prepare(
+        'SELECT estado, motivo_rechazo, fecha_cancelacion FROM pedido WHERE id_pedido = :id_pedido'
+    );
+    $consultaCanceladoB->execute([':id_pedido' => $idPedidoB]);
+    $pedidoCanceladoB = $consultaCanceladoB->fetch(PDO::FETCH_ASSOC);
+
+    [, $respuestaSeguimientoB] = peticionJson(
+        $baseUrl . '/modules/3_ecommerce/api/track_order.php?id_pedido=' . $idPedidoB,
+        'GET',
+        null,
+        $archivoCookiesB
+    );
+
+    if (
+        $codigoCancelarB === 200
+        && !empty($respuestaCancelarB['exito'])
+        && $pedidoCanceladoB['estado'] === 'Cancelado'
+        && $pedidoCanceladoB['motivo_rechazo'] === 'Cancelado por el cliente'
+        && $pedidoCanceladoB['fecha_cancelacion'] !== null
+        && ($respuestaSeguimientoB['pedido']['estado'] ?? null) === 'Cancelado'
+    ) {
+        echo "  -> ÉXITO: El cliente canceló su pedido y el seguimiento muestra 'Cancelado'.\n";
+        $exitos++;
+    } else {
+        echo "  -> FALLO: Código HTTP {$codigoCancelarB}, Respuesta: {$crudoCancelarB}\n";
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Prueba 10: no se puede cancelar un pedido que ya está en proceso
+    // ─────────────────────────────────────────────────────────────────────────
+    echo "\n[PRUEBA 10] Verificando que no se pueda cancelar un pedido 'En Proceso'...\n";
+
+    $pdo->prepare("UPDATE pedido SET estado = 'En Proceso' WHERE id_pedido = :id_pedido")
+        ->execute([':id_pedido' => $idPedidoA]);
+
+    [$codigoCancelarEnProceso, $respuestaCancelarEnProceso, $crudoCancelarEnProceso] = peticionJson(
+        $baseUrl . '/modules/3_ecommerce/api/cancel_client_order.php',
+        'POST',
+        ['id_pedido' => $idPedidoA],
+        $archivoCookiesA,
+        ['X-Requested-With: XMLHttpRequest']
+    );
+
+    $consultaEstadoA = $pdo->prepare('SELECT estado FROM pedido WHERE id_pedido = :id_pedido');
+    $consultaEstadoA->execute([':id_pedido' => $idPedidoA]);
+
+    if (
+        $codigoCancelarEnProceso === 409
+        && empty($respuestaCancelarEnProceso['exito'])
+        && str_contains((string)($respuestaCancelarEnProceso['mensaje'] ?? ''), 'proceso')
+        && $consultaEstadoA->fetchColumn() === 'En Proceso'
+    ) {
+        echo "  -> ÉXITO: El pedido en proceso no se canceló (HTTP 409).\n";
+        $exitos++;
+    } else {
+        echo "  -> FALLO: Código HTTP {$codigoCancelarEnProceso}, Respuesta: {$crudoCancelarEnProceso}\n";
     }
 
 } catch (Throwable $error) {

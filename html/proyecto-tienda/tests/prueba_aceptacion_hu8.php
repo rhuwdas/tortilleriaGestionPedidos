@@ -17,7 +17,7 @@ $nombreClienteNuevo = "Cliente Nuevo HU8 {$sufijo}";
 $apellidosClienteNuevo = 'Captura Rápida';
 $pedidosCreados = [];
 $pruebasExitosas = 0;
-$pruebasTotales = 4;
+$pruebasTotales = 7;
 
 /** @return array{0: int, 1: mixed, 2: string} */
 function peticionJsonHu8(
@@ -200,6 +200,98 @@ try {
         echo "  -> ÉXITO\n";
     } else {
         echo "  -> FALLO\n";
+    }
+
+    echo "[PRUEBA 5] Aceptar un pedido de mostrador que aún no se cobra...\n";
+    [$codigoAceptar, $respuestaAceptar] = peticionJsonHu8(
+        $baseUrl . '/modules/4_pos/api/manage_online_order.php',
+        'POST',
+        ['id_pedido' => $pedidosCreados[0], 'accion' => 'aceptar'],
+        $archivoCookies
+    );
+    $consultaAceptado = $pdo->prepare(
+        'SELECT estado, fecha_aceptacion, id_empleado_atiende FROM pedido WHERE id_pedido = :id_pedido'
+    );
+    $consultaAceptado->execute([':id_pedido' => $pedidosCreados[0]]);
+    $pedidoAceptadoPos = $consultaAceptado->fetch(PDO::FETCH_ASSOC);
+    if (
+        $codigoAceptar === 200
+        && ($respuestaAceptar['exito'] ?? false) === true
+        && $pedidoAceptadoPos['estado'] === 'En Proceso'
+        && $pedidoAceptadoPos['fecha_aceptacion'] !== null
+        && (int)$pedidoAceptadoPos['id_empleado_atiende'] === $idEmpleado
+    ) {
+        $pruebasExitosas++;
+        echo "  -> ÉXITO\n";
+    } else {
+        echo "  -> FALLO (HTTP {$codigoAceptar})\n";
+    }
+
+    echo "[PRUEBA 6] Cancelar un pedido aceptado que aún no se cobra...\n";
+    [$codigoCancelarAceptado, $respuestaCancelarAceptado] = peticionJsonHu8(
+        $baseUrl . '/modules/4_pos/api/manage_online_order.php',
+        'POST',
+        [
+            'id_pedido' => $pedidosCreados[0],
+            'accion' => 'cancelar',
+            'motivo' => 'El cliente canceló antes de pagar',
+        ],
+        $archivoCookies
+    );
+    $consultaCancelado = $pdo->prepare(
+        'SELECT estado, motivo_rechazo, fecha_cancelacion FROM pedido WHERE id_pedido = :id_pedido'
+    );
+    $consultaCancelado->execute([':id_pedido' => $pedidosCreados[0]]);
+    $pedidoCanceladoPos = $consultaCancelado->fetch(PDO::FETCH_ASSOC);
+    if (
+        $codigoCancelarAceptado === 200
+        && ($respuestaCancelarAceptado['exito'] ?? false) === true
+        && $pedidoCanceladoPos['estado'] === 'Cancelado'
+        && $pedidoCanceladoPos['motivo_rechazo'] === 'El cliente canceló antes de pagar'
+        && $pedidoCanceladoPos['fecha_cancelacion'] !== null
+    ) {
+        $pruebasExitosas++;
+        echo "  -> ÉXITO\n";
+    } else {
+        echo "  -> FALLO (HTTP {$codigoCancelarAceptado})\n";
+    }
+
+    echo "[PRUEBA 7] Cancelar un pedido pendiente y retirarlo de la bandeja...\n";
+    [$codigoCancelarPendiente] = peticionJsonHu8(
+        $baseUrl . '/modules/4_pos/api/manage_online_order.php',
+        'POST',
+        [
+            'id_pedido' => $pedidosCreados[1],
+            'accion' => 'cancelar',
+            'motivo' => 'Sin disponibilidad para la entrega',
+        ],
+        $archivoCookies
+    );
+    [$codigoBandejaFinal, $respuestaBandejaFinal] = peticionJsonHu8(
+        $baseUrl . '/modules/4_pos/api/receive_online_orders.php',
+        'GET',
+        null,
+        $archivoCookies
+    );
+    $idsBandejaFinal = array_map(
+        static fn(array $pedido): int => (int)$pedido['id_pedido'],
+        $respuestaBandejaFinal['pedidos'] ?? []
+    );
+    $consultaCanceladoPendiente = $pdo->prepare(
+        'SELECT estado FROM pedido WHERE id_pedido = :id_pedido'
+    );
+    $consultaCanceladoPendiente->execute([':id_pedido' => $pedidosCreados[1]]);
+    if (
+        $codigoCancelarPendiente === 200
+        && $consultaCanceladoPendiente->fetchColumn() === 'Cancelado'
+        && $codigoBandejaFinal === 200
+        && !in_array($pedidosCreados[0], $idsBandejaFinal, true)
+        && !in_array($pedidosCreados[1], $idsBandejaFinal, true)
+    ) {
+        $pruebasExitosas++;
+        echo "  -> ÉXITO\n";
+    } else {
+        echo "  -> FALLO (HTTP {$codigoCancelarPendiente})\n";
     }
 } catch (Throwable $error) {
     echo "\nERROR GENERAL: {$error->getMessage()}\n";

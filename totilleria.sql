@@ -548,6 +548,24 @@ CREATE TABLE `vista_recuperacion_password` (
 ,`usado` tinyint(1)
 );
 
+-- --------------------------------------------------------
+
+--
+-- Estructura Stand-in para la vista `vista_usuarios_general`
+-- (Véase abajo para la vista actual)
+--
+
+CREATE TABLE `vista_usuarios_general` (
+`activo` tinyint(1)
+,`email` varchar(120)
+,`id_usuario` int
+,`nombre_completo` varchar(201)
+,`password_hash` varchar(255)
+,`rol` varchar(50)
+,`tipo_usuario` varchar(8)
+,`usuario` varchar(50)
+);
+
 --
 -- Índices para tablas volcadas
 --
@@ -795,6 +813,15 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 DROP TABLE IF EXISTS `vista_recuperacion_password`;
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vista_recuperacion_password`  AS SELECT `rp`.`id_recuperacion` AS `id_recuperacion`, `rp`.`email` AS `email`, `rp`.`codigo` AS `codigo`, `rp`.`expira_en` AS `expira_en`, `rp`.`usado` AS `usado`, `rp`.`creado_en` AS `creado_en`, (case when (`rp`.`usado` = 1) then 'Usado' when (`rp`.`expira_en` < now()) then 'Expirado' else 'Vigente' end) AS `estado_codigo`, timestampdiff(MINUTE,now(),`rp`.`expira_en`) AS `minutos_restantes`, (select `e`.`id_empleado` from `empleado` `e` where (`e`.`email` = `rp`.`email`) limit 1) AS `id_empleado`, (select `c`.`id_cliente` from `cliente` `c` where (`c`.`email` = `rp`.`email`) limit 1) AS `id_cliente`, (case when exists(select 1 from `empleado` `e` where (`e`.`email` = `rp`.`email`)) then 'Empleado' when exists(select 1 from `cliente` `c` where (`c`.`email` = `rp`.`email`)) then 'Cliente' else 'No registrado' end) AS `tipo_usuario` FROM `recuperacion_password` AS `rp` ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura para la vista `vista_usuarios_general`
+--
+DROP TABLE IF EXISTS `vista_usuarios_general`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vista_usuarios_general`  AS SELECT 'Cliente' AS `tipo_usuario`, `c`.`id_cliente` AS `id_usuario`, concat(`c`.`nombre`,' ',`c`.`apellidos`) AS `nombre_completo`, `c`.`usuario` AS `usuario`, `c`.`email` AS `email`, `c`.`password_hash` AS `password_hash`, `c`.`activo` AS `activo`, NULL AS `rol` FROM `cliente` AS `c` WHERE (`c`.`usuario` IS NOT NULL OR `c`.`email` IS NOT NULL) UNION ALL SELECT 'Empleado' AS `tipo_usuario`, `e`.`id_empleado` AS `id_usuario`, concat(`e`.`nombre`,' ',`e`.`apellidos`) AS `nombre_completo`, `e`.`usuario` AS `usuario`, `e`.`email` AS `email`, `e`.`password_hash` AS `password_hash`, `e`.`activo` AS `activo`, `r`.`rol` AS `rol` FROM (`empleado` `e` JOIN `rol` `r` ON((`e`.`id_rol` = `r`.`id_rol`))) ;
 
 --
 -- Restricciones para tablas volcadas

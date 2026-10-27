@@ -166,7 +166,12 @@
 	listaClientes.addEventListener('click', (evento) => {
 		const boton = evento.target.closest('.resultado-cliente');
 		if (!boton) return;
-		seleccionarCliente(boton.dataset);
+		seleccionarCliente({
+			id_cliente: Number(boton.dataset.idCliente),
+			nombre: boton.dataset.nombre,
+			apellidos: boton.dataset.apellidos,
+			telefono: boton.dataset.telefono,
+		});
 	});
 
 	document.getElementById('limpiar-cliente-pos').addEventListener('click', () => {
@@ -268,7 +273,7 @@
 			}
 			: null;
 		if (tipoEntrega === 'Domicilio' && (!direccion.calle || !direccion.municipio)) {
-			mostrarAlerta('Para entrega a domicilio captura calle y municipio.');
+			mostrarAlerta('Para entrega a domicilio captura la calle y selecciona el municipio.');
 			return;
 		}
 
@@ -285,21 +290,14 @@
 		actualizarDisponibilidadRegistro();
 		try {
 			const respuesta = await PosService.crearPedido(datosPedido);
-			mostrarAlerta(`Pedido ${respuesta.numero_pedido} registrado en la bandeja.`, 'success');
-			articulosTicket = [];
-			clienteActual = null;
-			clienteSeleccionado.classList.add('d-none');
-			campoBusqueda.disabled = false;
-			document.getElementById('nombre-cliente-pos').value = '';
-			document.getElementById('apellidos-cliente-pos').value = '';
-			document.getElementById('telefono-cliente-pos').value = '';
-			document.getElementById('calle-entrega-pos').value = '';
-			document.getElementById('colonia-entrega-pos').value = '';
-			document.getElementById('municipio-entrega-pos').value = '';
-			document.getElementById('referencia-entrega-pos').value = '';
-			renderizarTicket();
-			document.dispatchEvent(new CustomEvent('pedido:registrado'));
-			window.setTimeout(() => cambiarVista('bandeja'), 900);
+			const idPedido = Number(respuesta.id_pedido);
+
+			if (!idPedido) {
+				throw new Error('El pedido se registró, pero no se recibió su identificador para cobrarlo.');
+			}
+
+			// Al confirmar el pedido se navega directo a la caja para cobrarlo.
+			window.location.href = `/proyecto-tienda/?ruta=/caja&id_pedido=${idPedido}`;
 		} catch (error) {
 			mostrarAlerta(error.message || 'No se pudo registrar el pedido.');
 		} finally {

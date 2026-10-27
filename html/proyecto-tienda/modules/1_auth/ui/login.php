@@ -22,11 +22,15 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 if (!empty($_SESSION['id_usuario'])) {
-    if (isset($_SESSION['rol']) && strtolower($_SESSION['rol']) === 'cliente') {
-        header('Location: /proyecto-tienda/?ruta=/catalogo');
-    } else {
-        header('Location: /proyecto-tienda/?ruta=/dashboard');
-    }
+    $rolSesion = strtolower(trim((string)($_SESSION['rol'] ?? '')));
+    $rutaInicio = match ($rolSesion) {
+        'cliente'              => '/catalogo',
+        'vendedor', 'cajero'   => '/pos',
+        'repartidor'           => '/logistica',
+        default                => '/dashboard',
+    };
+
+    header('Location: /proyecto-tienda/?ruta=' . $rutaInicio);
     exit;
 }
 ?>

@@ -83,6 +83,11 @@ body {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* Mantiene visible la flecha nativa del select sin que el texto la cubra */
+.control-formulario.form-select {
+    padding-right: 2.25rem;
+}
+
 .control-formulario:focus {
     border-color: var(--color-primario);
     box-shadow: 0 0 0 3px rgba(26, 86, 160, 0.20);

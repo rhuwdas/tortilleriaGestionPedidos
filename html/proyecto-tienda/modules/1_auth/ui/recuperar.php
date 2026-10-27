@@ -31,9 +31,17 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Si ya tiene sesión activa, redirigir al dashboard
+// Si ya tiene sesión activa, redirigir a la pantalla principal de su rol
 if (!empty($_SESSION['id_usuario'])) {
-    header('Location: /proyecto-tienda/?ruta=/dashboard');
+    $rolSesion = strtolower(trim((string)($_SESSION['rol'] ?? '')));
+    $rutaInicio = match ($rolSesion) {
+        'cliente'              => '/catalogo',
+        'vendedor', 'cajero'   => '/pos',
+        'repartidor'           => '/logistica',
+        default                => '/dashboard',
+    };
+
+    header('Location: /proyecto-tienda/?ruta=' . $rutaInicio);
     exit;
 }
 

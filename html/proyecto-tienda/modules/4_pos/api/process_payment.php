@@ -9,7 +9,7 @@ header('Content-Type: application/json; charset=UTF-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 
 require_once __DIR__ . '/../../../core/Database.php';
-require_once __DIR__ . '/CashModel.php';
+require_once __DIR__ . '/../../6_cash/api/CashModel.php';
 
 function responderPago(bool $exito, string $mensaje, array $datos = [], int $codigo = 200): never
 {

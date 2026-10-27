@@ -9,11 +9,13 @@
 	const formularioRechazo = document.getElementById('formulario-rechazo');
 	const campoMotivo = document.getElementById('motivo-rechazo');
 	const mensajeAccion = document.getElementById('mensaje-accion');
+	const campoBusquedaPedidos = document.getElementById('buscar-pedido-bandeja');
 
+	let pedidosActuales = [];
 	let pedidosConocidos = new Set();
 	let cargaInicial = true;
 	let sonidoActivo = false;
-	let idPedidoPorRechazar = null;
+	let idPedidoPorCancelar = null;
 	let cargando = false;
 	let temporizadorAlerta = null;
 
@@ -61,6 +63,7 @@
 		datosCliente.append(
 			crearTexto('Cliente', `${pedido.nombre_cliente} ${pedido.apellidos_cliente}`.trim()),
 			crearTexto('Teléfono', pedido.telefono),
+			crearTexto('Pedido realizado', formatearFecha(pedido.fecha_pedido)),
 			crearTexto('Entrega solicitada', formatearFecha(pedido.fecha_hora_entrega_solicitada))
 		);
 
@@ -88,26 +91,30 @@
 
 		const acciones = document.createElement('div');
 		acciones.className = 'pedido-acciones';
-		if (pedido.estado === 'Pendiente' && pedido.canal === 'Web') {
+
+		// Mientras el pedido no tenga pago registrado se puede aceptar o cancelar.
+		if (pedido.estado === 'Pendiente') {
 			const botonAceptar = document.createElement('button');
 			botonAceptar.type = 'button';
 			botonAceptar.className = 'btn btn-success';
 			botonAceptar.dataset.accion = 'aceptar';
 			botonAceptar.textContent = 'Aceptar';
-			const botonRechazar = document.createElement('button');
-			botonRechazar.type = 'button';
-			botonRechazar.className = 'btn btn-outline-danger';
-			botonRechazar.dataset.accion = 'rechazar';
-			botonRechazar.textContent = 'Rechazar';
-			acciones.append(botonAceptar, botonRechazar);
-		} else {
-			const botonCobrar = document.createElement('button');
-			botonCobrar.type = 'button';
-			botonCobrar.className = 'btn btn-primary';
-			botonCobrar.dataset.accion = 'cobrar';
-			botonCobrar.innerHTML = '<i class="bi bi-cash-coin me-1" aria-hidden="true"></i>Cobrar';
-			acciones.append(botonCobrar);
+			acciones.append(botonAceptar);
 		}
+
+		const botonCobrar = document.createElement('button');
+		botonCobrar.type = 'button';
+		botonCobrar.className = 'btn btn-primary';
+		botonCobrar.dataset.accion = 'cobrar';
+		botonCobrar.innerHTML = '<i class="bi bi-cash-coin me-1" aria-hidden="true"></i>Cobrar';
+		acciones.append(botonCobrar);
+
+		const botonCancelar = document.createElement('button');
+		botonCancelar.type = 'button';
+		botonCancelar.className = 'btn btn-outline-danger';
+		botonCancelar.dataset.accion = 'cancelar';
+		botonCancelar.textContent = 'Cancelar';
+		acciones.append(botonCancelar);
 
 		tarjeta.append(encabezado, datosCliente, detalles, totalPedido, acciones);
 		return tarjeta;
@@ -129,14 +136,56 @@
 		oscilador.addEventListener('ended', () => contexto.close(), { once: true });
 	};
 
-	const mostrarPedidos = (pedidos) => {
+	const normalizarTexto = (valor) => String(valor ?? '')
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.toLowerCase()
+		.trim();
+
+	const textoBusquedaPedido = (pedido) => {
+		const numero = String(pedido.id_pedido).padStart(6, '0');
+		return normalizarTexto([
+			pedido.id_pedido,
+			`PED-${numero}`,
+			numero,
+			pedido.nombre_cliente,
+			pedido.apellidos_cliente,
+			pedido.telefono,
+			pedido.calle,
+			pedido.colonia,
+			pedido.municipio,
+			pedido.canal,
+			pedido.estado,
+			pedido.tipo_entrega,
+		].filter(Boolean).join(' '));
+	};
+
+	const filtrarPedidos = () => {
+		const terminos = normalizarTexto(campoBusquedaPedidos?.value)
+			.split(/\s+/)
+			.filter(Boolean);
+
+		if (terminos.length === 0) {
+			return pedidosActuales;
+		}
+
+		return pedidosActuales.filter((pedido) => {
+			const texto = textoBusquedaPedido(pedido);
+			return terminos.every((termino) => texto.includes(termino));
+		});
+	};
+
+	const mostrarPedidos = () => {
 		listaPedidos.replaceChildren();
+		const pedidos = filtrarPedidos();
 		contadorPedidos.textContent = String(pedidos.length);
 
 		if (pedidos.length === 0) {
 			const vacio = document.createElement('p');
 			vacio.className = 'bandeja-vacia';
-			vacio.textContent = 'No hay pedidos pendientes.';
+			vacio.textContent = pedidosActuales.length === 0
+				? 'No hay pedidos pendientes.'
+				: 'No hay pedidos que coincidan con la búsqueda.';
 			listaPedidos.append(vacio);
 			return;
 		}
@@ -155,7 +204,8 @@
 				? []
 				: pedidos.filter((pedido) => !pedidosConocidos.has(Number(pedido.id_pedido)));
 
-			mostrarPedidos(pedidos);
+			pedidosActuales = pedidos;
+			mostrarPedidos();
 			pedidosConocidos = idsActuales;
 			cargaInicial = false;
 			mensajeEstado.textContent = `Actualizado ${new Intl.DateTimeFormat('es-MX', {
@@ -219,8 +269,9 @@
 			window.location.href = `/proyecto-tienda/?ruta=/caja&id_pedido=${idPedido}`;
 			return;
 		}
+		if (boton.dataset.accion !== 'cancelar') return;
 
-		idPedidoPorRechazar = idPedido;
+		idPedidoPorCancelar = idPedido;
 		campoMotivo.value = '';
 		dialogoRechazo.showModal();
 		campoMotivo.focus();
@@ -237,13 +288,16 @@
 		campoMotivo.setCustomValidity('');
 		const botonConfirmar = formularioRechazo.querySelector('[type="submit"]');
 		botonConfirmar.disabled = true;
-		await resolverPedido(idPedidoPorRechazar, 'rechazar', motivo);
+		await resolverPedido(idPedidoPorCancelar, 'cancelar', motivo);
 		botonConfirmar.disabled = false;
 		dialogoRechazo.close();
-		idPedidoPorRechazar = null;
+		idPedidoPorCancelar = null;
 	});
 
 	campoMotivo.addEventListener('input', () => campoMotivo.setCustomValidity(''));
+
+	campoBusquedaPedidos?.addEventListener('input', mostrarPedidos);
+	campoBusquedaPedidos?.addEventListener('search', mostrarPedidos);
 
 	botonSonido.addEventListener('click', () => {
 		sonidoActivo = !sonidoActivo;
@@ -256,7 +310,7 @@
 
 	document.getElementById('cerrar-dialogo-rechazo').addEventListener('click', () => {
 		dialogoRechazo.close();
-		idPedidoPorRechazar = null;
+		idPedidoPorCancelar = null;
 	});
 
 	document.addEventListener('pedido:registrado', cargarPedidos);

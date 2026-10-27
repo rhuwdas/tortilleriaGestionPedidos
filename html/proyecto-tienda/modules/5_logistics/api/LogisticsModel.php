@@ -38,7 +38,7 @@ class LogisticsModel
 			   LEFT JOIN direccion_geolocalizacion geo ON geo.id_direccion = d.id_direccion
 			  WHERE p.id_repartidor = :id_repartidor
 				AND p.tipo_entrega = 'Domicilio'
-				AND p.estado = 'En Ruta'
+				AND p.estado IN ('Pendiente', 'En Proceso', 'En Ruta')
 			  ORDER BY p.fecha_hora_entrega_solicitada IS NULL,
 						p.fecha_hora_entrega_solicitada ASC,
 						p.id_pedido ASC"
@@ -86,7 +86,7 @@ class LogisticsModel
 			  WHERE id_pedido = :id_pedido
 				AND id_repartidor = :id_repartidor
 				AND tipo_entrega = 'Domicilio'
-				AND estado = 'En Ruta'"
+				AND estado IN ('Pendiente', 'En Proceso', 'En Ruta')"
 		);
 		$sentencia->execute([
 			':id_pedido' => $idPedido,

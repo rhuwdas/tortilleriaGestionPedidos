@@ -14,7 +14,7 @@ $idCliente = null;
 $idPedido = null;
 $idVenta = null;
 $exitos = 0;
-$totalPruebas = 4;
+$totalPruebas = 5;
 
 /** @return array{0: int, 1: mixed, 2: string} */
 function peticionJsonHu9(string $url, string $metodo = 'GET', ?array $cuerpo = null, ?string $archivoCookies = null): array
@@ -187,6 +187,30 @@ try {
 		echo "  -> ÉXITO\n";
 	} else {
 		echo "  -> FALLO (HTTP {$codigoDuplicado})\n";
+	}
+
+	echo "[PRUEBA 5] Un pedido cobrado ya no se puede cancelar...\n";
+	[$codigoCancelarCobrado, $respuestaCancelarCobrado] = peticionJsonHu9(
+		$baseUrl . '/modules/4_pos/api/manage_online_order.php',
+		'POST',
+		[
+			'id_pedido' => $idPedido,
+			'accion' => 'cancelar',
+			'motivo' => 'Intento de cancelación posterior al cobro',
+		],
+		$archivoCookies
+	);
+	$consultaEstadoFinal = $pdo->prepare('SELECT estado FROM pedido WHERE id_pedido = :id_pedido');
+	$consultaEstadoFinal->execute([':id_pedido' => $idPedido]);
+	if (
+		$codigoCancelarCobrado === 409
+		&& ($respuestaCancelarCobrado['exito'] ?? true) === false
+		&& $consultaEstadoFinal->fetchColumn() === 'En Proceso'
+	) {
+		$exitos++;
+		echo "  -> ÉXITO\n";
+	} else {
+		echo "  -> FALLO (HTTP {$codigoCancelarCobrado})\n";
 	}
 } catch (Throwable $error) {
 	echo "\nERROR GENERAL: {$error->getMessage()}\n";

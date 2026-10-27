@@ -113,10 +113,10 @@ docker compose exec web bash
 2. `login.php` valida método HTTP (`POST`) y encabezado `X-Requested-With: XMLHttpRequest`.
 3. Se busca el usuario con `AuthModel::buscarPorCorreo()` (prepared statement PDO).
 4. Se verifica la contraseña con `password_verify()`.
-5. Se llama `session_regenerate_id(true)` y se almacena `id_usuario`, `nombre`, `correo`, `rol` en sesión.
-6. Respuesta JSON: `{ "exito": true, "redireccion": "/ruta" }` — `admin` → `/dashboard`, `cliente` → `/catalogo`.
+5. Se llama `session_regenerate_id(true)` y se almacena `id_usuario`, `nombre`, `correo`, `rol`, `tipo_usuario` y los identificadores de cliente, empleado o repartidor según corresponda.
+6. Respuesta JSON: `{ "exito": true, "redireccion": "/ruta" }` — `Cliente` → `/catalogo`, `Vendedor`/`Cajero` → `/pos`, `Repartidor` → `/logistica`, `Administrador` → `/dashboard`.
 
-El rol `Repartidor` usa una cuenta de empleado vinculada a un registro de la tabla `repartidor`; el login guarda el `id_repartidor` asociado y redirige a `/logistica`. Para una base existente, ejecutar una vez `database/migrations/hu10_repartidor_auth.sql`, crear la cuenta de empleado con rol `Repartidor` y vincularla al registro correspondiente. No se asigna una contraseña predeterminada.
+El rol `Repartidor` usa una cuenta de empleado vinculada a un registro de la tabla `repartidor`; el login guarda el `id_repartidor` asociado y redirige a `/logistica`. Para una base existente, ejecutar una vez `database/migrations/hu10_repartidor_auth.sql`, crear la cuenta de empleado con rol `Repartidor` y vincularla al registro correspondiente. La migración es segura de reejecutar, crea la vista `vista_usuarios_general` que usa el login y no asigna contraseñas predeterminadas.
 
 **Flujo de recuperación (HU2):**
 - Pantalla 1: ingreso de correo → envío de código de 6 dígitos.
@@ -189,7 +189,7 @@ La bandeja de recepción actualiza los pedidos pendientes automáticamente, avis
 | `ui/mapRoutes.js` | Enlaces directos de navegación a Google Maps |
 | `ui/logistica.css` | Estilos responsivos de la ruta móvil |
 
-La ruta se filtra en servidor por `id_repartidor`, solo incluye entregas domiciliarias en estado **En Ruta** y registra `fecha_entrega` al confirmar. Para domicilios con geolocalización abre navegación a coordenadas; si no hay coordenadas, abre la dirección como destino.
+La ruta se filtra en servidor por `id_repartidor` e incluye las entregas domiciliarias activas (**Pendiente**, **En Proceso** y **En Ruta**) y registra `fecha_entrega` al confirmar. Los pedidos a domicilio creados desde la tienda en línea o desde caja se asignan automáticamente al repartidor disponible con menor carga (`core/AsignacionRepartidor.php`). Para domicilios con geolocalización abre navegación a coordenadas; si no hay coordenadas, abre la dirección como destino.
 
 ### 6. Caja (`6_cash`)
 
@@ -229,14 +229,32 @@ $pdo = Database::obtenerInstancia()->obtenerConexion();
 
 ### `Router.php`
 
-Mapea URIs a archivos PHP del proyecto.
+Mapea URIs a archivos PHP del proyecto y aplica el control de acceso por rol.
 
 | Tipo | Rutas |
 |---|---|
-| Públicas (sin sesión) | `/`, `/login`, `/recuperar` |
-| Protegidas (requieren `$_SESSION['id_usuario']`) | `/dashboard`, `/catalogo`, `/ecommerce`, `/pos`, `/logistica`, `/caja`, `/reportes`, `/logout` |
+| Públicas (sin sesión) | `/`, `/login`, `/recuperar`, `/registro` |
+| Protegidas (solo sesión) | `/dashboard`, `/reportes`, `/logout` |
+| Solo Cliente | `/catalogo`, `/ecommerce`, `/mis-pedidos` |
+| Vendedor o Cajero | `/pos`, `/caja` |
+| Solo Repartidor vinculado | `/logistica` |
 
-Ruta no registrada → redirige a `/login`.
+Una cuenta sin el rol requerido recibe `403 Forbidden`; una ruta sin sesión redirige a `/login`. Las rutas no registradas también redirigen a `/login`.
+
+Matriz de acceso por historia de usuario:
+
+| HU | Ruta | Rol |
+|---|---|---|
+| HU1 | `/` o `/?ruta=/login` | Todos |
+| HU2 | `/?ruta=/recuperar` | Recuperación de cuenta |
+| HU3 | `/?ruta=/catalogo` | Cliente |
+| HU4 | `/?ruta=/registro` | Registro de cliente |
+| HU5 | `/?ruta=/ecommerce` | Cliente |
+| HU6 | `/?ruta=/mis-pedidos` | Cliente |
+| HU7 | `/?ruta=/pos` | Vendedor o Cajero |
+| HU8 | `/?ruta=/pos` → Nuevo pedido | Vendedor o Cajero |
+| HU9 | `/?ruta=/caja&id_pedido={id}` | Vendedor o Cajero |
+| HU10 | `/?ruta=/logistica` | Repartidor vinculado |
 
 ### `ApiManager.js`
 

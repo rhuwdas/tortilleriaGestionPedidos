@@ -35,7 +35,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const botonRevisarPedido = document.getElementById('boton-revisar-pedido');
     
     // Modal
-    const modalConfirmacionPedido = new bootstrap.Modal(document.getElementById('modal-confirmacion-pedido'));
+    const modalConfirmacionElemento = document.getElementById('modal-confirmacion-pedido');
+    const modalConfirmacionPedido = new bootstrap.Modal(modalConfirmacionElemento);
+    const modalErrorPedidoElemento = document.getElementById('modal-error-pedido');
+    const modalErrorPedido = modalErrorPedidoElemento ? new bootstrap.Modal(modalErrorPedidoElemento) : null;
+    const mensajeModalErrorPedido = document.getElementById('mensaje-modal-error-pedido');
     const listaResumenModal = document.getElementById('lista-resumen-modal');
     const modalTipoEntrega = document.getElementById('modal-tipo-entrega');
     const modalFilaDireccion = document.getElementById('modal-fila-direccion');
@@ -45,6 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const botonConfirmarFinal = document.getElementById('boton-confirmar-final');
     const textoConfirmarFinal = document.getElementById('texto-confirmar-final');
     const spinnerConfirmarFinal = document.getElementById('spinner-confirmar-final');
+    const contenidoConfirmacionPedido = document.getElementById('contenido-confirmacion-pedido');
+    const pedidoConfirmado = document.getElementById('pedido-confirmado');
+    const numeroPedidoConfirmado = document.getElementById('numero-pedido-confirmado');
+    const pieConfirmacionPedido = document.getElementById('pie-confirmacion-pedido');
     
     // Alertas
     const alertaErrorPedido = document.getElementById('alerta-error-pedido');
@@ -54,27 +62,56 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Campos de dirección
     const campoFechaEntrega = document.getElementById('campo-fecha-entrega');
+    const etiquetaFechaEntrega = document.getElementById('etiqueta-fecha-entrega');
+    const ayudaHorarioEntrega = document.getElementById('ayuda-horario-entrega');
     
     let carrito = [];
     let tipoEntregaSeleccionado = 'Domicilio';
+    let mensajeErrorPendienteModal = null;
+
+    /**
+     * Ajusta el texto del campo de fecha según el tipo de entrega elegido.
+     */
+    function actualizarEtiquetasHorario() {
+        const esRecogidaLocal = tipoEntregaSeleccionado === 'Recoger en local';
+
+        if (etiquetaFechaEntrega) {
+            etiquetaFechaEntrega.textContent = esRecogidaLocal
+                ? 'Fecha y Hora de Recogida'
+                : 'Fecha y Hora de Entrega';
+        }
+
+        if (ayudaHorarioEntrega) {
+            ayudaHorarioEntrega.textContent = esRecogidaLocal
+                ? 'Horario de recogida en local: Lunes a Domingo de 7:00 a 17:00 hrs.'
+                : 'Horario de entrega: Lunes a Domingo de 7:00 a 17:00 hrs.';
+        }
+    }
 
     function validarHorarioEntrega() {
+        const esRecogidaLocal = tipoEntregaSeleccionado === 'Recoger en local';
         const valorFecha = campoFechaEntrega?.value;
         const fechaEntrega = valorFecha ? new Date(valorFecha) : null;
 
         if (!fechaEntrega || Number.isNaN(fechaEntrega.getTime())) {
-            mostrarError('Selecciona una fecha y hora de entrega.');
+            mostrarError(esRecogidaLocal
+                ? 'Selecciona una fecha y hora de recogida.'
+                : 'Selecciona una fecha y hora de entrega.');
             return false;
         }
 
         if (fechaEntrega <= new Date()) {
-            mostrarError('La fecha y hora de entrega debe ser futura.');
+            mostrarError(esRecogidaLocal
+                ? 'La fecha y hora de recogida debe ser futura.'
+                : 'La fecha y hora de entrega debe ser futura.');
             return false;
         }
 
         const minutosEntrega = fechaEntrega.getHours() * 60 + fechaEntrega.getMinutes();
         if (minutosEntrega < 420 || minutosEntrega > 1020) {
-            mostrarError('La hora de entrega debe estar dentro del horario de 07:00 a 17:00.');
+            mostrarError(esRecogidaLocal
+                ? 'La hora de recogida en local debe estar dentro del horario de 07:00 a 17:00 hrs.'
+                : 'La hora de entrega debe estar dentro del horario de 07:00 a 17:00.');
             return false;
         }
 
@@ -200,6 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
             opcionDomicilio.classList.add('seleccionada');
             opcionLocal.classList.remove('seleccionada');
             if (bloqueDireccionEntrega) bloqueDireccionEntrega.style.display = 'block';
+            actualizarEtiquetasHorario();
         });
     }
     
@@ -209,8 +247,11 @@ document.addEventListener('DOMContentLoaded', () => {
             opcionLocal.classList.add('seleccionada');
             opcionDomicilio.classList.remove('seleccionada');
             if (bloqueDireccionEntrega) bloqueDireccionEntrega.style.display = 'none';
+            actualizarEtiquetasHorario();
         });
     }
+
+    actualizarEtiquetasHorario();
     
     // Selector de dirección guardada
     if (selectorDireccionGuardada) {
@@ -223,6 +264,55 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    /**
+     * Muestra el error de confirmación en un modal independiente.
+     */
+    function mostrarModalErrorPedido(mensaje) {
+        if (mensajeModalErrorPedido) {
+            mensajeModalErrorPedido.textContent = mensaje;
+        }
+        if (modalErrorPedido) {
+            modalErrorPedido.show();
+        }
+    }
+
+    // Cuando se cierra la confirmación por un error de stock, se muestra el
+    // aviso en un modal nuevo para que quede visible y no detrás del anterior.
+    if (modalConfirmacionElemento) {
+        modalConfirmacionElemento.addEventListener('hidden.bs.modal', () => {
+            if (!mensajeErrorPendienteModal) {
+                return;
+            }
+
+            const mensajePendiente = mensajeErrorPendienteModal;
+            mensajeErrorPendienteModal = null;
+            mostrarModalErrorPedido(mensajePendiente);
+        });
+    }
+
+    /**
+     * Vuelve el modal de confirmación a su estado de revisión.
+     */
+    function restablecerModalConfirmacion() {
+        if (contenidoConfirmacionPedido) contenidoConfirmacionPedido.classList.remove('d-none');
+        if (pedidoConfirmado) pedidoConfirmado.classList.add('d-none');
+        if (pieConfirmacionPedido) pieConfirmacionPedido.classList.remove('d-none');
+        if (botonConfirmarFinal) botonConfirmarFinal.disabled = false;
+        if (spinnerConfirmarFinal) spinnerConfirmarFinal.classList.add('d-none');
+        if (textoConfirmarFinal) textoConfirmarFinal.textContent = 'Confirmar y Enviar Pedido';
+    }
+
+    /**
+     * Muestra el número de pedido dentro del modal, para que el cliente pueda
+     * guardarlo antes de salir de la tienda.
+     */
+    function mostrarPedidoConfirmado(numeroPedido) {
+        if (numeroPedidoConfirmado) numeroPedidoConfirmado.textContent = numeroPedido;
+        if (contenidoConfirmacionPedido) contenidoConfirmacionPedido.classList.add('d-none');
+        if (pedidoConfirmado) pedidoConfirmado.classList.remove('d-none');
+        if (pieConfirmacionPedido) pieConfirmacionPedido.classList.add('d-none');
+    }
+
     // Revisar y mostrar modal de confirmación
     if (botonRevisarPedido) {
         botonRevisarPedido.addEventListener('click', () => {
@@ -234,6 +324,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!validarHorarioEntrega()) {
                 return;
             }
+
+            restablecerModalConfirmacion();
             
             // Llenar lista de productos en modal
             listaResumenModal.innerHTML = '';
@@ -347,15 +439,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const resultado = await respuesta.json();
                 
                 if (respuesta.ok && resultado.exito) {
-                    modalConfirmacionPedido.hide();
-                    mostrarExito(`¡Pedido ${resultado.numero_pedido} creado exitosamente! Te redirigiremos a tus pedidos.`);
+                    const numeroPedido = resultado.numero_pedido
+                        || `PED-${String(resultado.id_pedido ?? '').padStart(6, '0')}`;
+                    mostrarPedidoConfirmado(numeroPedido);
                     carrito = [];
                     actualizarCarrito();
-                    setTimeout(() => {
-                        window.location.href = '/proyecto-tienda/?ruta=/mis-pedidos';
-                    }, 2000);
+                    ocultarAlertas();
                 } else {
-                    mostrarError(resultado.mensaje || 'Error al crear el pedido');
+                    const mensajeError = resultado.mensaje || 'Error al crear el pedido';
+                    if (mensajeError.includes('no podemos cubrir su pedido')) {
+                        mensajeErrorPendienteModal = mensajeError;
+                        modalConfirmacionPedido.hide();
+                    } else {
+                        mostrarError(mensajeError);
+                    }
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -403,6 +500,29 @@ document.addEventListener('DOMContentLoaded', () => {
         return fechaAjustada.toISOString().slice(0, 16);
     }
 
+    /**
+     * Asigna un valor a un campo de dirección, respetando las opciones
+     * disponibles cuando se trata de un select (municipio y colonia).
+     */
+    function asignarValorCampoDireccion(idCampo, valor) {
+        const campo = document.getElementById(idCampo);
+        if (!campo || valor === null || valor === undefined) {
+            return;
+        }
+
+        if (campo.tagName === 'SELECT') {
+            const opcion = Array.from(campo.options).find(
+                (opcionActual) => opcionActual.value === String(valor)
+            );
+            if (opcion) {
+                campo.value = opcion.value;
+            }
+            return;
+        }
+
+        campo.value = valor;
+    }
+
     // Recargar en el carrito los productos de un pedido anterior (HU6 - Repetir pedido)
     document.addEventListener('pedido:repetir', (evento) => {
         const pedido = evento.detail?.pedido;
@@ -441,6 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (opcionLocal) opcionLocal.classList.remove('seleccionada');
             if (bloqueDireccionEntrega) bloqueDireccionEntrega.style.display = 'block';
         }
+        actualizarEtiquetasHorario();
 
         // Conservar la dirección de entrega del pedido anterior cuando sea posible.
         if (tipoEntregaSeleccionado === 'Domicilio') {
@@ -465,10 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
 
                 Object.entries(camposDireccion).forEach(([idCampo, valor]) => {
-                    const campo = document.getElementById(idCampo);
-                    if (campo && valor !== null && valor !== undefined) {
-                        campo.value = valor;
-                    }
+                    asignarValorCampoDireccion(idCampo, valor);
                 });
             }
         }

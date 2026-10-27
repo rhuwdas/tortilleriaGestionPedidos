@@ -15,6 +15,7 @@ if (
 }
 
 require_once __DIR__ . '/../../../core/Database.php';
+require_once __DIR__ . '/../../../core/MunicipiosCobertura.php';
 $pdo = Database::obtenerInstancia()->obtenerConexion();
 $productosPos = $pdo->query(
     'SELECT id_producto, nombre, precio_kilo, unidad
@@ -89,6 +90,16 @@ $rolUsuario = htmlspecialchars($_SESSION['rol'], ENT_QUOTES, 'UTF-8');
                 <p class="texto-actualizacion" id="mensaje-estado" aria-live="polite">Conectando con la bandeja…</p>
             </div>
             <div class="controles-bandeja">
+                <div class="buscador-bandeja">
+                    <label for="buscar-pedido-bandeja" class="visually-hidden">Buscar pedido</label>
+                    <input
+                        id="buscar-pedido-bandeja"
+                        type="search"
+                        class="form-control"
+                        placeholder="Buscar pedido, cliente o teléfono"
+                        autocomplete="off"
+                    >
+                </div>
                 <span class="contador-pedidos"><span id="contador-pedidos">0</span> pendientes</span>
                 <button type="button" class="btn btn-outline-secondary" id="boton-sonido" aria-pressed="false">
                     <i class="bi bi-volume-mute-fill" aria-hidden="true"></i> Activar sonido
@@ -212,11 +223,23 @@ $rolUsuario = htmlspecialchars($_SESSION['rol'], ENT_QUOTES, 'UTF-8');
                                 </div>
                                 <div class="col-md-6">
                                     <label for="colonia-entrega-pos" class="form-label">Colonia</label>
-                                    <input id="colonia-entrega-pos" class="form-control" maxlength="100">
+                                    <select id="colonia-entrega-pos" class="form-select">
+                                        <option value="">Selecciona una colonia</option>
+                                        <?php foreach (obtenerColoniasXoxocotlan() as $coloniaXoxo): ?>
+                                            <option value="<?= htmlspecialchars($coloniaXoxo, ENT_QUOTES, 'UTF-8') ?>">
+                                                <?= htmlspecialchars($coloniaXoxo, ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="municipio-entrega-pos" class="form-label">Municipio</label>
-                                    <input id="municipio-entrega-pos" class="form-control" maxlength="100">
+                                    <select id="municipio-entrega-pos" class="form-select">
+                                        <option value="<?= htmlspecialchars(obtenerMunicipioEntrega(), ENT_QUOTES, 'UTF-8') ?>" selected>
+                                            <?= htmlspecialchars(obtenerMunicipioEntrega(), ENT_QUOTES, 'UTF-8') ?> (Xoxo)
+                                        </option>
+                                    </select>
+                                    <div class="form-text">Cobertura de entrega únicamente en Xoxo.</div>
                                 </div>
                                 <div class="col-12">
                                     <label for="referencia-entrega-pos" class="form-label">Referencias</label>
@@ -246,12 +269,12 @@ $rolUsuario = htmlspecialchars($_SESSION['rol'], ENT_QUOTES, 'UTF-8');
 
     <dialog id="dialogo-rechazo" class="dialogo-rechazo" aria-labelledby="titulo-rechazo">
         <form id="formulario-rechazo">
-            <h2 id="titulo-rechazo">Rechazar pedido</h2>
-            <label for="motivo-rechazo" class="form-label">Motivo del rechazo</label>
+            <h2 id="titulo-rechazo">Cancelar pedido</h2>
+            <label for="motivo-rechazo" class="form-label">Motivo de la cancelación</label>
             <textarea id="motivo-rechazo" class="form-control" rows="4" maxlength="255" required></textarea>
             <div class="acciones-dialogo">
-                <button type="button" class="btn btn-outline-secondary" id="cerrar-dialogo-rechazo">Cancelar</button>
-                <button type="submit" class="btn btn-danger">Confirmar rechazo</button>
+                <button type="button" class="btn btn-outline-secondary" id="cerrar-dialogo-rechazo">Volver</button>
+                <button type="submit" class="btn btn-danger">Confirmar cancelación</button>
             </div>
         </form>
     </dialog>

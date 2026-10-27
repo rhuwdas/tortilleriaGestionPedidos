@@ -11,6 +11,7 @@
  */
 
 require_once __DIR__ . '/../../../core/Database.php';
+require_once __DIR__ . '/../../../core/AsignacionRepartidor.php';
 
 /**
  * Excepción lanzada cuando el inventario de materias primas no cubre la
@@ -36,6 +37,9 @@ class ExistenciasInsuficientesException extends RuntimeException
 
 class EcommerceModel
 {
+    /** Mensaje genérico mostrado al cliente cuando no hay existencias suficientes. */
+    public const MENSAJE_INVENTARIO_INSUFICIENTE = 'Lo lamentamos, no podemos cubrir su pedido; vaya al local.';
+
     /** @var PDO Conexión activa a la base de datos */
     private PDO $conexionBaseDatos;
 
@@ -98,11 +102,11 @@ class EcommerceModel
      *
      * @param array $items         Artículos del carrito con id_producto y cantidad.
      * @param bool  $bloquearFilas Bloquear filas de inventario dentro de una transacción.
-     * @return array{valido: bool, errores: array<int, string>}
+     * @return array{valido: bool, errores: array<int, string>, inventario_insuficiente: bool}
      */
     public function validarExistencias(array $items, bool $bloquearFilas = false): array
     {
-        $resultado = ['valido' => true, 'errores' => []];
+        $resultado = ['valido' => true, 'errores' => [], 'inventario_insuficiente' => false];
         $cantidadesPorProducto = [];
         $cantidadInvalida = false;
 
@@ -147,15 +151,10 @@ class EcommerceModel
 
                 if ($cantidadNecesaria > $stockDisponible) {
                     $resultado['valido'] = false;
-                    $resultado['errores'][] = sprintf(
-                        'Inventario insuficiente para %s: se requieren %.2f %s de %s y solo hay %.2f %s disponibles.',
-                        $producto['nombre'],
-                        $cantidadNecesaria,
-                        $requerimiento['unidad_medida'],
-                        $requerimiento['materia_prima'],
-                        $stockDisponible,
-                        $requerimiento['unidad_medida']
-                    );
+                    $resultado['inventario_insuficiente'] = true;
+                    if (!in_array(self::MENSAJE_INVENTARIO_INSUFICIENTE, $resultado['errores'], true)) {
+                        $resultado['errores'][] = self::MENSAJE_INVENTARIO_INSUFICIENTE;
+                    }
                     break;
                 }
             }
@@ -217,7 +216,14 @@ class EcommerceModel
                     $sentenciaDetalle->execute();
                 }
             }
-            
+
+            // Asignar automáticamente el pedido a un repartidor disponible.
+            asignarRepartidorAutomatico(
+                $this->conexionBaseDatos,
+                $idPedido,
+                (string)$datosPedido['tipo_entrega']
+            );
+
             $this->conexionBaseDatos->commit();
             return $idPedido;
             
@@ -245,6 +251,9 @@ class EcommerceModel
                     p.canal,
                     p.tipo_entrega,
                     p.fecha_hora_entrega_solicitada,
+                    p.fecha_aceptacion,
+                    p.fecha_entrega,
+                    p.fecha_cancelacion,
                     p.motivo_rechazo,
                     p.id_direccion,
                     d.calle,
@@ -297,6 +306,9 @@ class EcommerceModel
                     p.canal,
                     p.tipo_entrega,
                     p.fecha_hora_entrega_solicitada,
+                    p.fecha_aceptacion,
+                    p.fecha_entrega,
+                    p.fecha_cancelacion,
                     p.motivo_rechazo,
                     p.id_direccion,
                     d.calle,
@@ -328,6 +340,33 @@ class EcommerceModel
         $pedido['detalles'] = $detallesPorPedido[(int)$pedido['id_pedido']] ?? [];
 
         return $pedido;
+    }
+
+    /**
+     * Cancela un pedido del cliente autenticado únicamente mientras siga
+     * Pendiente, es decir, antes de que el personal lo ponga En Proceso.
+     * El UPDATE condicional también impide cancelar pedidos entregados,
+     * cancelados o que ya fueron aceptados.
+     *
+     * @param int $idPedido  Pedido que se desea cancelar.
+     * @param int $idCliente Cliente autenticado propietario del pedido.
+     */
+    public function cancelarPedidoCliente(int $idPedido, int $idCliente): bool
+    {
+        $sentencia = $this->conexionBaseDatos->prepare(
+            "UPDATE pedido
+                SET estado = 'Cancelado',
+                    motivo_rechazo = 'Cancelado por el cliente',
+                    fecha_cancelacion = NOW()
+              WHERE id_pedido = :id_pedido
+                AND id_cliente = :id_cliente
+                AND estado = 'Pendiente'"
+        );
+        $sentencia->bindValue(':id_pedido', $idPedido, PDO::PARAM_INT);
+        $sentencia->bindValue(':id_cliente', $idCliente, PDO::PARAM_INT);
+        $sentencia->execute();
+
+        return $sentencia->rowCount() === 1;
     }
 
     /**

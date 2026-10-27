@@ -90,6 +90,27 @@ function responderJson(bool $exito, string $mensaje = '', array $extras = []): n
     exit;
 }
 
+/**
+ * Normaliza el nombre del rol para que la comparación no dependa de mayúsculas
+ * o minúsculas almacenadas en la base de datos.
+ *
+ * @param string $rol Nombre del rol obtenido de la base de datos.
+ * @return string Rol con la capitalización usada por el sistema.
+ */
+function normalizarRol(string $rol): string
+{
+    $rolNormalizado = strtolower(trim($rol));
+
+    return match ($rolNormalizado) {
+        'administrador' => 'Administrador',
+        'vendedor'      => 'Vendedor',
+        'cajero'        => 'Cajero',
+        'repartidor'    => 'Repartidor',
+        'cliente'       => 'Cliente',
+        default         => trim($rol),
+    };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Validación del método HTTP y tipo de solicitud
 // ─────────────────────────────────────────────────────────────────────────────
@@ -136,26 +157,12 @@ $contrasenaEntrada = $datos['contrasena']; // No hacer trim a la contraseña (pu
 try {
     $modeloAuth = new AuthModel();
 
-    // Paso 1: Buscar al usuario en la tabla empleado y en la tabla cliente
-    $empleado = $modeloAuth->buscarEmpleado($correoEntrada);
-    $cliente  = $modeloAuth->buscarCliente($correoEntrada);
+    // Paso 1: consultar la vista unificada de clientes, empleados y repartidores.
+    $usuario = $modeloAuth->buscarPorCorreo($correoEntrada);
 
-    $usuario = null;
-
-    // Paso 2: Verificar la contraseña contra las cuentas encontradas
-    // Se valida primero contra empleado; si no coincide o no existe, contra cliente.
-    if (
-        $empleado !== null 
-        && !empty($empleado['contrasena_hash']) 
-        && password_verify($contrasenaEntrada, $empleado['contrasena_hash'])
-    ) {
-        $usuario = $empleado;
-    } elseif (
-        $cliente !== null 
-        && !empty($cliente['contrasena_hash']) 
-        && password_verify($contrasenaEntrada, $cliente['contrasena_hash'])
-    ) {
-        $usuario = $cliente;
+    // Paso 2: validar la contraseña del usuario encontrado.
+    if ($usuario === null || empty($usuario['contrasena_hash']) || !password_verify($contrasenaEntrada, $usuario['contrasena_hash'])) {
+        $usuario = null;
     }
 
     // Si las credenciales no coinciden con ninguna cuenta encontrada (empleado o cliente)
@@ -170,6 +177,9 @@ try {
         http_response_code(403); // Forbidden
         responderJson(false, 'Tu cuenta está desactivada. Contacta al administrador.');
     }
+
+    // Normalizar el rol para no depender de mayúsculas/minúsculas en la BD.
+    $usuario['rol'] = normalizarRol((string)$usuario['rol']);
 
     if ($usuario['rol'] === 'Repartidor' && empty($usuario['id_repartidor'])) {
         http_response_code(403);

@@ -27,6 +27,7 @@ if (empty($_SESSION['id_usuario']) && empty($_SESSION['id_cliente'])) {
 }
 
 require_once __DIR__ . '/../../../core/Database.php';
+require_once __DIR__ . '/../../../core/MunicipiosCobertura.php';
 require_once __DIR__ . '/../../1_auth/api/ClienteModel.php';
 
 $pdo = Database::obtenerInstancia()->obtenerConexion();
@@ -271,15 +272,29 @@ $direccionesGuardadas = $perfilCliente['direcciones'] ?? [];
                             </div>
                             <div class="row g-2 mb-2">
                                 <div class="col-6">
-                                    <input type="text" id="campo-direccion-colonia" class="form-control form-control-sm" placeholder="Colonia">
+                                    <select id="campo-direccion-colonia" class="form-select form-select-sm">
+                                        <option value="">Selecciona una colonia</option>
+                                        <?php foreach (obtenerColoniasXoxocotlan() as $coloniaXoxo): ?>
+                                            <option value="<?= htmlspecialchars($coloniaXoxo, ENT_QUOTES, 'UTF-8') ?>">
+                                                <?= htmlspecialchars($coloniaXoxo, ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
                                 <div class="col-6">
-                                    <input type="text" id="campo-direccion-municipio" class="form-control form-control-sm" placeholder="Municipio *" value="Oaxaca" required>
+                                    <select id="campo-direccion-municipio" class="form-select form-select-sm" required>
+                                        <option value="<?= htmlspecialchars(obtenerMunicipioEntrega(), ENT_QUOTES, 'UTF-8') ?>" selected>
+                                            <?= htmlspecialchars(obtenerMunicipioEntrega(), ENT_QUOTES, 'UTF-8') ?> (Xoxo)
+                                        </option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="mb-2">
                                 <input type="text" id="campo-direccion-referencia" class="form-control form-control-sm" placeholder="Referencias de entrega">
                             </div>
+                            <small class="text-muted d-block mb-2">
+                                Entregas únicamente en Santa Cruz Xoxocotlán (Xoxo).
+                            </small>
 
                             <!-- Mapa interactivo de referencia para ubicar la dirección de entrega -->
                             <div id="mapa-referencia-entrega" class="mapa-entrega-contenedor">
@@ -298,7 +313,7 @@ $direccionesGuardadas = $perfilCliente['direcciones'] ?? [];
 
                     <!-- Selector de fecha y hora deseada -->
                     <div class="mt-3">
-                        <label for="campo-fecha-entrega" class="form-label fw-semibold">Fecha y Hora Deseada</label>
+                        <label for="campo-fecha-entrega" id="etiqueta-fecha-entrega" class="form-label fw-semibold">Fecha y Hora Deseada</label>
                         <input
                             type="datetime-local"
                             id="campo-fecha-entrega"
@@ -307,7 +322,7 @@ $direccionesGuardadas = $perfilCliente['direcciones'] ?? [];
                             min="<?= date('Y-m-d\TH:i') ?>"
                             required
                         >
-                        <small class="text-muted">Horario de entrega: Lunes a Domingo de 7:00 a 17:00 hrs.</small>
+                        <small id="ayuda-horario-entrega" class="text-muted">Horario de entrega: Lunes a Domingo de 7:00 a 17:00 hrs.</small>
                     </div>
 
                     <!-- Forma de pago estática (regla de negocio: efectivo) -->
@@ -373,43 +388,85 @@ $direccionesGuardadas = $perfilCliente['direcciones'] ?? [];
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted small mb-3">Por favor, revisa detalladamente tu pedido antes de confirmar la compra:</p>
+                    <div id="contenido-confirmacion-pedido">
+                        <p class="text-muted small mb-3">Por favor, revisa detalladamente tu pedido antes de confirmar la compra:</p>
 
-                    <h6 class="fw-bold mb-2">Productos seleccionados:</h6>
-                    <ul id="lista-resumen-modal" class="list-group list-group-flush mb-3 border rounded">
-                        <!-- Rellenado por JS -->
-                    </ul>
+                        <h6 class="fw-bold mb-2">Productos seleccionados:</h6>
+                        <ul id="lista-resumen-modal" class="list-group list-group-flush mb-3 border rounded">
+                            <!-- Rellenado por JS -->
+                        </ul>
 
-                    <div class="bg-light p-3 rounded mb-3">
-                        <div class="d-flex justify-content-between small mb-1">
-                            <span><strong>Tipo de entrega:</strong></span>
-                            <span id="modal-tipo-entrega">A domicilio</span>
+                        <div class="bg-light p-3 rounded mb-3">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span><strong>Tipo de entrega:</strong></span>
+                                <span id="modal-tipo-entrega">A domicilio</span>
+                            </div>
+                            <div id="modal-fila-direccion" class="d-flex justify-content-between small mb-1">
+                                <span><strong>Destino:</strong></span>
+                                <span id="modal-direccion" class="text-end">Av. Juárez #123</span>
+                            </div>
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span><strong>Fecha/Hora solicitada:</strong></span>
+                                <span id="modal-fecha-entrega">Hoy 12:00</span>
+                            </div>
+                            <div class="d-flex justify-content-between small">
+                                <span><strong>Forma de pago:</strong></span>
+                                <span>Efectivo</span>
+                            </div>
                         </div>
-                        <div id="modal-fila-direccion" class="d-flex justify-content-between small mb-1">
-                            <span><strong>Destino:</strong></span>
-                            <span id="modal-direccion" class="text-end">Av. Juárez #123</span>
-                        </div>
-                        <div class="d-flex justify-content-between small mb-1">
-                            <span><strong>Fecha/Hora solicitada:</strong></span>
-                            <span id="modal-fecha-entrega">Hoy 12:00</span>
-                        </div>
-                        <div class="d-flex justify-content-between small">
-                            <span><strong>Forma de pago:</strong></span>
-                            <span>Efectivo</span>
+
+                        <div class="d-flex justify-content-between align-items-center p-2 rounded" style="background-color: #eff6ff;">
+                            <span class="fs-6 fw-bold text-primary">Total a pagar:</span>
+                            <span id="modal-total-pagar" class="fs-4 fw-bold text-primary">$0.00</span>
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center p-2 rounded" style="background-color: #eff6ff;">
-                        <span class="fs-6 fw-bold text-primary">Total a pagar:</span>
-                        <span id="modal-total-pagar" class="fs-4 fw-bold text-primary">$0.00</span>
+                    <div id="pedido-confirmado" class="text-center py-3 d-none" role="status" aria-live="polite">
+                        <i class="bi bi-check-circle-fill text-success display-5" aria-hidden="true"></i>
+                        <h4 class="mt-2 mb-1">¡Pedido confirmado!</h4>
+                        <p class="text-muted mb-2">Tu número de pedido es:</p>
+                        <div id="numero-pedido-confirmado" class="numero-pedido-confirmacion">PED-000000</div>
+                        <p class="text-muted small mt-3 mb-3">
+                            Guarda este número para consultar el estado de tu entrega.
+                        </p>
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <a href="/proyecto-tienda/?ruta=/mis-pedidos" class="btn btn-primary">
+                                <i class="bi bi-clock-history me-1" aria-hidden="true"></i>Ver mis pedidos
+                            </a>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                Seguir comprando
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer" id="pie-confirmacion-pedido">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Modificar</button>
                     <button type="button" id="boton-confirmar-final" class="btn btn-primary" style="background-color: #1a56a0;">
                         <span id="texto-confirmar-final">Confirmar y Enviar Pedido</span>
                         <span id="spinner-confirmar-final" class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════════
+         MODAL DE ERROR AL CONFIRMAR EL PEDIDO
+         ══════════════════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="modal-error-pedido" tabindex="-1" aria-labelledby="tituloModalErrorPedido" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="tituloModalErrorPedido">
+                        <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>No pudimos confirmar tu pedido
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="mensaje-modal-error-pedido" class="mb-0"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendido</button>
                 </div>
             </div>
         </div>

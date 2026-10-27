@@ -27,6 +27,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 
 require_once __DIR__ . '/../../../core/Database.php';
+require_once __DIR__ . '/../../../core/MunicipiosCobertura.php';
 require_once __DIR__ . '/ClienteModel.php';
 
 // Validar método HTTP
@@ -146,18 +147,14 @@ if ($confirmarContrasena !== null && $confirmarContrasena !== '' && $contrasena 
 // ─────────────────────────────────────────────────────────────────────────────
 // 5. Validación de cobertura de dirección de entrega (flujo alterno)
 // ─────────────────────────────────────────────────────────────────────────────
-if ($calle !== '' && $municipio !== '') {
-    $municipiosCobertura = ['oaxaca', 'toluca', 'metepec', 'zinacantepec', 'san mateo atenco', 'lerma', 'centro'];
-    $municipioNormalizado = mb_strtolower(trim($municipio), 'UTF-8');
-    if (!in_array($municipioNormalizado, $municipiosCobertura, true)) {
-        http_response_code(422);
-        echo json_encode([
-            'exito' => false,
-            'mensaje' => 'La dirección está fuera de alcance.',
-            'codigo' => 'DIRECCION_FUERA_DE_ALCANCE'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
+if ($calle !== '' && $municipio !== '' && !municipioTieneCobertura($municipio)) {
+    http_response_code(422);
+    echo json_encode([
+        'exito' => false,
+        'mensaje' => 'La dirección está fuera de alcance.',
+        'codigo' => 'DIRECCION_FUERA_DE_ALCANCE'
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

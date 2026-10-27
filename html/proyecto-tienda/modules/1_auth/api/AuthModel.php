@@ -2,8 +2,8 @@
 /**
  * modules/1_auth/api/AuthModel.php
  *
- * Modelo de autenticación para la base de datos 'tortilleria'.
- * Consulta tanto la tabla 'empleado' (con su rol asociado) como la tabla 'cliente'.
+ * Modelo de autenticación basado en la vista vista_usuarios_general.
+ * Enriquece las cuentas de empleado con el id_repartidor vinculado cuando aplica.
  * 
  * Cumple con agents.md:
  *  - Consultas preparadas con PDO para evitar inyección SQL.
@@ -30,33 +30,8 @@ class AuthModel
      */
     public function buscarEmpleado(string $identificador): ?array
     {
-        $identificadorLimpio = trim($identificador);
-
-        $sentencia = $this->pdo->prepare(
-            'SELECT e.id_empleado AS id, 
-                    e.nombre, 
-                    e.apellidos, 
-                    e.email AS correo, 
-                    e.usuario, 
-                    e.password_hash AS contrasena_hash, 
-                    r.rol AS rol, 
-                    e.activo,
-                    rd.id_repartidor,
-                    \'empleado\' AS tipo_usuario
-               FROM empleado e
-               JOIN rol r ON e.id_rol = r.id_rol
-                LEFT JOIN repartidor rd ON rd.id_empleado = e.id_empleado
-              WHERE LOWER(TRIM(e.email)) = LOWER(:identificador_email)
-                 OR LOWER(TRIM(e.usuario)) = LOWER(:identificador_usuario)
-              LIMIT 1'
-        );
-
-        $sentencia->bindValue(':identificador_email',   $identificadorLimpio, PDO::PARAM_STR);
-        $sentencia->bindValue(':identificador_usuario', $identificadorLimpio, PDO::PARAM_STR);
-        $sentencia->execute();
-
-        $empleado = $sentencia->fetch(PDO::FETCH_ASSOC);
-        return $empleado !== false ? $empleado : null;
+        $usuario = $this->buscarPorCorreo($identificador);
+        return $usuario !== null && $usuario['tipo_usuario'] === 'empleado' ? $usuario : null;
     }
 
     /**
@@ -68,47 +43,45 @@ class AuthModel
      */
     public function buscarCliente(string $identificador): ?array
     {
-        $identificadorLimpio = trim($identificador);
-
-        $sentencia = $this->pdo->prepare(
-            'SELECT c.id_cliente AS id, 
-                    c.nombre, 
-                    c.apellidos, 
-                    c.email AS correo, 
-                    c.usuario, 
-                    c.password_hash AS contrasena_hash, 
-                    \'Cliente\' AS rol, 
-                    c.activo,
-                    \'cliente\' AS tipo_usuario
-               FROM cliente c
-              WHERE LOWER(TRIM(c.email)) = LOWER(:identificador_email)
-                 OR (c.usuario IS NOT NULL AND c.usuario != \'\' AND LOWER(TRIM(c.usuario)) = LOWER(:identificador_usuario))
-              LIMIT 1'
-        );
-
-        $sentencia->bindValue(':identificador_email',   $identificadorLimpio, PDO::PARAM_STR);
-        $sentencia->bindValue(':identificador_usuario', $identificadorLimpio, PDO::PARAM_STR);
-        $sentencia->execute();
-
-        $cliente = $sentencia->fetch(PDO::FETCH_ASSOC);
-        return $cliente !== false ? $cliente : null;
+        $usuario = $this->buscarPorCorreo($identificador);
+        return $usuario !== null && $usuario['tipo_usuario'] === 'cliente' ? $usuario : null;
     }
 
     /**
-     * Busca un usuario por correo o nombre de usuario, primero en empleado y luego en cliente.
-     * Mantiene compatibilidad con llamadas existentes a AuthModel::buscarPorCorreo.
+    * Busca y normaliza una cuenta de la vista unificada de usuarios.
      *
      * @param string $correo Correo electrónico o nombre de usuario ingresado.
      * @return array|null Fila del usuario o null si no existe en ninguna de las dos tablas.
      */
     public function buscarPorCorreo(string $correo): ?array
     {
-        $empleado = $this->buscarEmpleado($correo);
-        if ($empleado !== null) {
-            return $empleado;
-        }
+        $identificadorLimpio = trim($correo);
+        $sentencia = $this->pdo->prepare(
+                "SELECT v.id_usuario AS id,
+                        v.nombre_completo AS nombre,
+                        '' AS apellidos,
+                        v.email AS correo,
+                        v.usuario,
+                        v.password_hash AS contrasena_hash,
+                        v.activo,
+                        CASE WHEN LOWER(v.tipo_usuario) = 'cliente' THEN 'cliente' ELSE 'empleado' END AS tipo_usuario,
+                        COALESCE(v.rol, 'Cliente') AS rol,
+                        r.id_repartidor
+                   FROM vista_usuarios_general v
+                   LEFT JOIN repartidor r
+                     ON LOWER(v.tipo_usuario) = 'empleado'
+                    AND r.id_empleado = v.id_usuario
+                  WHERE LOWER(TRIM(COALESCE(v.email, ''))) = LOWER(:identificador_email)
+                     OR LOWER(TRIM(COALESCE(v.usuario, ''))) = LOWER(:identificador_usuario)
+                  ORDER BY CASE WHEN LOWER(v.tipo_usuario) = 'empleado' THEN 0 ELSE 1 END
+                  LIMIT 1"
+        );
+        $sentencia->bindValue(':identificador_email', $identificadorLimpio, PDO::PARAM_STR);
+        $sentencia->bindValue(':identificador_usuario', $identificadorLimpio, PDO::PARAM_STR);
+        $sentencia->execute();
 
-        return $this->buscarCliente($correo);
+        $usuario = $sentencia->fetch(PDO::FETCH_ASSOC);
+        return $usuario !== false ? $usuario : null;
     }
 
     /**

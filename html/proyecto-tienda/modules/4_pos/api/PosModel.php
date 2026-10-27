@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../../../core/Database.php';
+require_once __DIR__ . '/../../../core/AsignacionRepartidor.php';
 require_once __DIR__ . '/../../3_ecommerce/api/EcommerceModel.php';
 
 class PosModel
@@ -37,9 +38,7 @@ class PosModel
 			   LEFT JOIN direccion d ON d.id_direccion = p.id_direccion
 			  WHERE p.estado IN ('Pendiente', 'En Proceso')
 				AND NOT EXISTS (SELECT 1 FROM pago pa WHERE pa.id_pedido = p.id_pedido)
-			  ORDER BY p.fecha_hora_entrega_solicitada IS NULL,
-					   p.fecha_hora_entrega_solicitada ASC,
-					   p.fecha_pedido ASC,
+			  ORDER BY p.fecha_pedido ASC,
 					   p.id_pedido ASC
 			  LIMIT 100"
 		);
@@ -202,6 +201,13 @@ class PosModel
 				]);
 			}
 
+			// Asignar automáticamente el pedido a un repartidor disponible.
+			asignarRepartidorAutomatico(
+				$this->conexionBaseDatos,
+				$idPedido,
+				(string)$datosPedido['tipo_entrega']
+			);
+
 			$this->conexionBaseDatos->commit();
 			return $idPedido;
 		} catch (Throwable $error) {
@@ -213,10 +219,11 @@ class PosModel
 	}
 
 	/**
-	 * Cambia un pedido web únicamente si todavía está pendiente.
-	 * El UPDATE condicional evita que dos vendedores atiendan el mismo pedido.
+	 * Acepta o cancela un pedido mientras no tenga un pago registrado.
+	 * El UPDATE condicional evita que dos vendedores atiendan el mismo pedido
+	 * o que se cancele una venta ya cobrada.
 	 */
-	public function resolverPedidoWeb(int $idPedido, int $idEmpleado, string $accion, ?string $motivo): bool
+	public function resolverPedidoNoPagado(int $idPedido, int $idEmpleado, string $accion, ?string $motivo): bool
 	{
 		if ($accion === 'aceptar') {
 			$sentencia = $this->conexionBaseDatos->prepare(
@@ -225,8 +232,10 @@ class PosModel
 						fecha_aceptacion = NOW(),
 						id_empleado_atiende = :id_empleado
 				  WHERE id_pedido = :id_pedido
-					AND canal = 'Web'
-					AND estado = 'Pendiente'"
+					AND estado = 'Pendiente'
+					AND NOT EXISTS (
+						SELECT 1 FROM pago pa WHERE pa.id_pedido = pedido.id_pedido
+					)"
 			);
 			$sentencia->execute([
 				':id_empleado' => $idEmpleado,
@@ -240,8 +249,10 @@ class PosModel
 						fecha_cancelacion = NOW(),
 						id_empleado_atiende = :id_empleado
 				  WHERE id_pedido = :id_pedido
-					AND canal = 'Web'
-					AND estado = 'Pendiente'"
+					AND estado IN ('Pendiente', 'En Proceso')
+					AND NOT EXISTS (
+						SELECT 1 FROM pago pa WHERE pa.id_pedido = pedido.id_pedido
+					)"
 			);
 			$sentencia->execute([
 				':motivo' => $motivo,

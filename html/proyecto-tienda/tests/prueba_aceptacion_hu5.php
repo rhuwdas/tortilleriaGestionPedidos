@@ -25,7 +25,7 @@ $baseUrl = 'http://localhost/proyecto-tienda';
 $archivoCookies = sys_get_temp_dir() . '/hu5_cookies_' . getmypid() . '.txt';
 
 $exitos = 0;
-$totalPruebas = 8;
+$totalPruebas = 9;
 $pedidosCreados = [];
 $idCliente = null;
 
@@ -277,10 +277,9 @@ try {
 
     if (
         $codigoStock === 422
-        && !empty($respuestaStock['mensaje'])
-        && str_contains((string)$respuestaStock['mensaje'], 'Inventario insuficiente')
+        && ($respuestaStock['mensaje'] ?? '') === 'Lo lamentamos, no podemos cubrir su pedido; vaya al local.'
     ) {
-        echo "  -> ÉXITO: El sistema bloqueó la compra por inventario insuficiente.\n";
+        echo "  -> ÉXITO: El sistema bloqueó la compra y mostró el mensaje genérico de stock.\n";
         $exitos++;
     } else {
         echo "  -> FALLO: Código HTTP {$codigoStock}, Respuesta: {$crudoStock}\n";
@@ -344,6 +343,32 @@ try {
         $exitos++;
     } else {
         echo "  -> FALLO: Código HTTP {$codigoFechaPasada}, Respuesta: " . json_encode($respuestaFechaPasada, JSON_UNESCAPED_UNICODE) . "\n";
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Prueba 9: Rechazo de recogida en local antes del horario de apertura
+    // ─────────────────────────────────────────────────────────────────────────
+    echo "\n[PRUEBA 9] Verificando rechazo de recogida en local antes de las 07:00...\n";
+
+    [$codigoAntesHorario, $respuestaAntesHorario] = peticionJson(
+        $baseUrl . '/modules/3_ecommerce/api/create_online_order.php',
+        'POST',
+        [
+            'items' => [['id_producto' => (int)$productoUno['id_producto'], 'cantidad' => 1]],
+            'tipo_entrega' => 'Recoger en local',
+            'fecha_hora_entrega_solicitada' => date('Y-m-d', strtotime('+1 day')) . ' 06:59:00',
+        ],
+        $archivoCookies
+    );
+
+    if (
+        $codigoAntesHorario === 422
+        && str_contains((string)($respuestaAntesHorario['mensaje'] ?? ''), '07:00 a 17:00')
+    ) {
+        echo "  -> ÉXITO: El sistema rechazó la recogida antes de las 07:00.\n";
+        $exitos++;
+    } else {
+        echo "  -> FALLO: Código HTTP {$codigoAntesHorario}, Respuesta: " . json_encode($respuestaAntesHorario, JSON_UNESCAPED_UNICODE) . "\n";
     }
 
 } catch (Throwable $error) {
