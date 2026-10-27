@@ -1,0 +1,195 @@
+:root {
+	--tinta-ruta: #24342f;
+	--verde-ruta: #276749;
+	--terracota-ruta: #a64c32;
+	--fondo-ruta: #f3f5f2;
+	--borde-ruta: #d7dfd9;
+}
+
+* { box-sizing: border-box; }
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	background: var(--fondo-ruta);
+	color: var(--tinta-ruta);
+	font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.barra-repartidor {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 16px;
+	padding: 14px max(16px, calc((100% - 1040px) / 2));
+	background: var(--tinta-ruta);
+	color: #fff;
+}
+
+.marca-repartidor,
+.cuenta-repartidor {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	color: inherit;
+}
+
+.marca-repartidor { font-weight: 750; text-decoration: none; }
+.marca-repartidor i { color: #e7a25b; font-size: 1.3rem; }
+.cuenta-repartidor a { color: #fff; font-size: 1.2rem; }
+
+.contenido-ruta {
+	width: min(100% - 28px, 1040px);
+	margin: 0 auto;
+	padding: 28px 0 48px;
+}
+
+.encabezado-ruta {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	margin-bottom: 20px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--borde-ruta);
+}
+
+.sobrelinea-ruta {
+	margin: 0 0 4px;
+	color: var(--terracota-ruta);
+	font-size: 0.73rem;
+	font-weight: 850;
+}
+
+.encabezado-ruta h1 { margin: 0; font-size: 1.65rem; font-weight: 780; }
+.estado-ruta { margin: 6px 0 0; color: #64736c; font-size: 0.9rem; }
+
+.boton-actualizar {
+	width: 46px;
+	height: 46px;
+	flex: 0 0 auto;
+	border: 1px solid #bec9c1;
+	border-radius: 6px;
+	background: #fff;
+	color: var(--tinta-ruta);
+	font-size: 1.2rem;
+}
+
+.boton-actualizar:disabled { opacity: 0.55; }
+
+.lista-entregas {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+	gap: 14px;
+}
+
+.tarjeta-entrega {
+	min-width: 0;
+	padding: 18px;
+	background: #fff;
+	border: 1px solid var(--borde-ruta);
+	border-top: 4px solid var(--terracota-ruta);
+	border-radius: 6px;
+}
+
+.encabezado-entrega {
+	display: flex;
+	justify-content: space-between;
+	align-items: start;
+	gap: 10px;
+	margin-bottom: 14px;
+}
+
+.numero-entrega { margin: 0; font-size: 1.08rem; font-weight: 780; }
+.hora-entrega { color: #607068; font-size: 0.78rem; text-align: right; }
+.dato-entrega { margin: 6px 0; overflow-wrap: anywhere; }
+.enlace-telefono { color: #285d86; }
+.direccion-entrega { font-weight: 700; }
+.referencia-entrega { margin: 4px 0 12px; color: #64736c; font-size: 0.86rem; }
+
+.productos-entrega {
+	margin: 14px 0;
+	padding: 10px 0;
+	border-top: 1px solid #e8ece9;
+	border-bottom: 1px solid #e8ece9;
+	list-style: none;
+}
+
+.productos-entrega li {
+	display: flex;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 5px 0;
+	font-size: 0.86rem;
+}
+
+.productos-entrega li span { overflow-wrap: anywhere; }
+.productos-entrega li strong { white-space: nowrap; }
+
+.pie-entrega {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.monto-entrega { font-weight: 800; color: #8a451b; }
+.monto-entrega.pagado { color: var(--verde-ruta); }
+
+.boton-mapa,
+.boton-confirmar-entrega {
+	min-height: 44px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 10px 14px;
+	border-radius: 5px;
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.boton-mapa { border: 1px solid #315e7c; color: #214e6d; }
+.boton-mapa:hover { background: #eaf2f7; }
+
+.boton-confirmar-entrega {
+	width: 100%;
+	margin-top: 14px;
+	border: 0;
+	background: var(--verde-ruta);
+	color: #fff;
+	font-size: 1rem;
+}
+
+.boton-confirmar-entrega:hover { background: #1f573d; }
+.boton-confirmar-entrega:disabled { opacity: 0.65; }
+
+.sin-entregas,
+.cargando-ruta {
+	grid-column: 1 / -1;
+	padding: 54px 18px;
+	margin: 0;
+	color: #617068;
+	text-align: center;
+}
+
+.alerta-ruta {
+	padding: 12px 14px;
+	margin-bottom: 16px;
+	background: #fee2e2;
+	border-left: 4px solid #b91c1c;
+	color: #991b1b;
+}
+
+.alerta-ruta.exito { background: #dcfce7; border-left-color: var(--verde-ruta); color: #166534; }
+.d-none { display: none !important; }
+
+@media (max-width: 560px) {
+	.barra-repartidor { padding: 12px 14px; }
+	.cuenta-repartidor span { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.contenido-ruta { width: min(100% - 20px, 520px); padding-top: 20px; }
+	.encabezado-entrega { flex-direction: column; }
+	.hora-entrega { text-align: left; }
+	.boton-mapa { flex: 1; }
+}

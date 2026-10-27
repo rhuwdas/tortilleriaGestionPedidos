@@ -1,14 +1,11 @@
 /**
  * modules/2_catalog/ui/catalogUI.js
  *
- * Filtrado por categoría/disponibilidad y búsqueda en tiempo real (HU3 — tarea 3.3).
+ * Filtrado por disponibilidad y búsqueda en tiempo real (HU3 — tarea 3.3).
  *
  * Responsabilidades:
- *  - Escuchar el evento 'catalogoCargado' emitido por catalog.js para poblar
- *    el selector de categorías con los datos reales de la BD.
  *  - Registrar los listeners de los controles de filtro:
  *      · #campoBusqueda     — input de texto (búsqueda en tiempo real con debounce)
- *      · #selectCategoria   — select de categoría
  *      · #switchDisponible  — checkbox "Solo disponibles"
  *  - Invocar Catalogo.filtrarYRenderizar() cada vez que cambia cualquier control.
  *
@@ -30,7 +27,6 @@ const CatalogoUI = (() => {
     // ── Referencias al DOM ────────────────────────────────────────────────────
 
     const campoBusqueda    = document.getElementById('campoBusqueda');
-    const selectCategoria  = document.getElementById('selectCategoria');
     const switchDisponible = document.getElementById('switchDisponible');
 
     // ── Estado interno ────────────────────────────────────────────────────────
@@ -46,31 +42,8 @@ const CatalogoUI = (() => {
      */
     const aplicarFiltros = () => {
         Catalogo.filtrarYRenderizar({
-            busqueda:       campoBusqueda?.value    ?? '',
-            categoria:      selectCategoria?.value  ?? '',
+            busqueda:       campoBusqueda?.value      ?? '',
             soloDisponible: switchDisponible?.checked ?? false,
-        });
-    };
-
-    /**
-     * Puebla el <select> de categorías con las opciones recibidas desde la BD.
-     * Conserva la opción "Todas" que ya está en el HTML.
-     *
-     * @param {string[]} categorias Lista de nombres de categoría.
-     */
-    const poblarSelectCategorias = (categorias) => {
-        if (!selectCategoria) return;
-
-        // Eliminar opciones previas excepto la primera ("Todas")
-        while (selectCategoria.options.length > 1) {
-            selectCategoria.remove(1);
-        }
-
-        categorias.forEach((categoria) => {
-            const opcion = document.createElement('option');
-            opcion.value       = categoria;
-            opcion.textContent = categoria;
-            selectCategoria.appendChild(opcion);
         });
     };
 
@@ -98,21 +71,10 @@ const CatalogoUI = (() => {
             });
         }
 
-        // ── Filtro por categoría ────────────────────────────────────────────
-        if (selectCategoria) {
-            selectCategoria.addEventListener('change', aplicarFiltros);
-        }
-
         // ── Toggle solo disponibles ─────────────────────────────────────────
         if (switchDisponible) {
             switchDisponible.addEventListener('change', aplicarFiltros);
         }
-
-        // ── Escuchar el evento de datos cargados emitido por catalog.js ─────
-        document.addEventListener('catalogoCargado', (evento) => {
-            const { categorias = [] } = evento.detail;
-            poblarSelectCategorias(categorias);
-        });
     };
 
     // ── Inicialización ────────────────────────────────────────────────────────

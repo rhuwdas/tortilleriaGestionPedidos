@@ -32,6 +32,13 @@ require_once __DIR__ . '/../../1_auth/api/ClienteModel.php';
 $pdo = Database::obtenerInstancia()->obtenerConexion();
 $idCliente = $_SESSION['id_cliente'] ?? $_SESSION['id_usuario'];
 $nombreUsuario = htmlspecialchars($_SESSION['nombre_usuario'] ?? $_SESSION['nombre'] ?? 'Cliente', ENT_QUOTES, 'UTF-8');
+$fechaEntregaInicial = new DateTimeImmutable('+1 hour');
+$minutosEntregaInicial = ((int)$fechaEntregaInicial->format('H') * 60) + (int)$fechaEntregaInicial->format('i');
+if ($minutosEntregaInicial < 420) {
+    $fechaEntregaInicial = $fechaEntregaInicial->setTime(10, 0);
+} elseif ($minutosEntregaInicial > 1020) {
+    $fechaEntregaInicial = $fechaEntregaInicial->modify('+1 day')->setTime(10, 0);
+}
 
 // Obtener catálogo de productos disponibles desde la vista oficial
 $sentenciaProductos = $pdo->query('SELECT id_producto, producto AS nombre, categoria, precio_kilo, unidad FROM vista_catalogo_web ORDER BY categoria, producto');
@@ -82,7 +89,7 @@ $direccionesGuardadas = $perfilCliente['direcciones'] ?? [];
                 <a href="/proyecto-tienda/?ruta=/catalogo" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-grid me-1"></i>Ver Catálogo
                 </a>
-                <a href="/proyecto-tienda/?ruta=/ecommerce#mis-pedidos" id="enlace-mis-pedidos" class="btn btn-sm btn-outline-light">
+                <a href="/proyecto-tienda/?ruta=/mis-pedidos" id="enlace-mis-pedidos" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-clock-history me-1"></i>Mis Pedidos
                 </a>
                 <span class="text-light small d-none d-md-inline">
@@ -273,6 +280,19 @@ $direccionesGuardadas = $perfilCliente['direcciones'] ?? [];
                             <div class="mb-2">
                                 <input type="text" id="campo-direccion-referencia" class="form-control form-control-sm" placeholder="Referencias de entrega">
                             </div>
+
+                            <!-- Mapa interactivo de referencia para ubicar la dirección de entrega -->
+                            <div id="mapa-referencia-entrega" class="mapa-entrega-contenedor">
+                                <iframe
+                                    title="Mapa interactivo de referencia para la entrega"
+                                    src="https://www.openstreetmap.org/export/embed.html?bbox=-96.79%2C17.03%2C-96.66%2C17.12&amp;layer=mapnik"
+                                    loading="lazy"
+                                    referrerpolicy="no-referrer-when-downgrade"
+                                ></iframe>
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                                Arrastra o amplía el mapa para ubicar tu domicilio de referencia.
+                            </small>
                         </div>
                     </div>
 
@@ -283,8 +303,9 @@ $direccionesGuardadas = $perfilCliente['direcciones'] ?? [];
                             type="datetime-local"
                             id="campo-fecha-entrega"
                             class="form-control"
-                            value="<?= date('Y-m-d\TH:i', strtotime('+1 hour')) ?>"
+                            value="<?= $fechaEntregaInicial->format('Y-m-d\TH:i') ?>"
                             min="<?= date('Y-m-d\TH:i') ?>"
+                            required
                         >
                         <small class="text-muted">Horario de entrega: Lunes a Domingo de 7:00 a 17:00 hrs.</small>
                     </div>
@@ -403,6 +424,9 @@ $direccionesGuardadas = $perfilCliente['direcciones'] ?? [];
 
     <!-- Script de checkout y gestión de carrito (desacoplado) -->
     <script src="/proyecto-tienda/modules/3_ecommerce/ui/checkout.js" defer></script>
+
+    <!-- Script de seguimiento de pedidos del cliente (HU6) -->
+    <script src="/proyecto-tienda/modules/3_ecommerce/ui/trackingUI.js" defer></script>
 
 </body>
 </html>

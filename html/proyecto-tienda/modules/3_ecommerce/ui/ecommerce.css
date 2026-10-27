@@ -202,8 +202,148 @@ body {
     margin-bottom: 1rem;
 }
 
+/* Mapa interactivo de referencia para la dirección de entrega */
+.mapa-entrega-contenedor {
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-tarjeta);
+    overflow: hidden;
+    height: 220px;
+    background-color: #e9ecef;
+}
+
+.mapa-entrega-contenedor iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+/* Seguimiento de pedidos (HU6) */
+#contenedor-mis-pedidos {
+    display: grid;
+    gap: 1rem;
+}
+
+.tarjeta-pedido {
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-tarjeta);
+    padding: 1rem 1.25rem;
+    background-color: var(--color-blanco);
+}
+
+.encabezado-pedido {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--color-borde);
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.numero-pedido {
+    color: var(--color-primario);
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.meta-pedido {
+    color: var(--color-texto-atenuado);
+    font-size: 12px;
+}
+
+.badge-estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.badge-estado-pendiente {
+    color: #92400E;
+    background-color: #FEF3C7;
+}
+
+.badge-estado-en-proceso {
+    color: #1E40AF;
+    background-color: #DBEAFE;
+}
+
+.badge-estado-en-ruta {
+    color: #5B21B6;
+    background-color: #EDE9FE;
+}
+
+.badge-estado-entregado {
+    color: #166534;
+    background-color: #DCFCE7;
+}
+
+.badge-estado-cancelado {
+    color: #991B1B;
+    background-color: var(--color-fondo-error);
+}
+
+.lista-productos-pedido {
+    list-style: none;
+    margin: 0 0 0.75rem;
+    padding: 0;
+    font-size: 14px;
+}
+
+.lista-productos-pedido li {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.25rem 0;
+    border-bottom: 1px dashed #eef2f7;
+}
+
+.lista-productos-pedido li:last-child {
+    border-bottom: none;
+}
+
+.pie-pedido {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.total-pedido {
+    font-weight: 700;
+    color: var(--color-primario);
+    font-size: 1.05rem;
+}
+
+.motivo-rechazo-pedido {
+    font-size: 13px;
+    color: var(--color-error);
+    background-color: var(--color-fondo-error);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.estado-vacio-pedidos {
+    text-align: center;
+    color: var(--color-texto-atenuado);
+    padding: 2rem 1rem;
+}
+
 @media (max-width: 768px) {
     .contenedor-tipo-entrega {
         grid-template-columns: 1fr;
+    }
+
+    .encabezado-pedido,
+    .pie-pedido {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }

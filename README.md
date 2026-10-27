@@ -116,6 +116,8 @@ docker compose exec web bash
 5. Se llama `session_regenerate_id(true)` y se almacena `id_usuario`, `nombre`, `correo`, `rol` en sesión.
 6. Respuesta JSON: `{ "exito": true, "redireccion": "/ruta" }` — `admin` → `/dashboard`, `cliente` → `/catalogo`.
 
+El rol `Repartidor` usa una cuenta de empleado vinculada a un registro de la tabla `repartidor`; el login guarda el `id_repartidor` asociado y redirige a `/logistica`. Para una base existente, ejecutar una vez `database/migrations/hu10_repartidor_auth.sql`, crear la cuenta de empleado con rol `Repartidor` y vincularla al registro correspondiente. No se asigna una contraseña predeterminada.
+
 **Flujo de recuperación (HU2):**
 - Pantalla 1: ingreso de correo → envío de código de 6 dígitos.
 - Pantalla 2: validación del código OTP (6 celdas individuales con auto-foco).
@@ -153,17 +155,27 @@ docker compose exec web bash
 | `api/EcommerceModel.php` | Modelo de pedido en línea (PDO) |
 | `ui/checkout.js` | Lógica del proceso de compra |
 | `ui/trackingUI.js` | UI de seguimiento de pedidos |
+| `ui/mis_pedidos.php` | Pantalla independiente del historial y seguimiento de pedidos (HU6) |
 
 ### 4. Punto de venta (`4_pos`)
 
 | Archivo | Descripción |
 |---|---|
 | `api/create_pos_order.php` | Endpoint POST: registra una venta en POS |
-| `api/process_payment.php` | Endpoint POST: procesa el pago |
-| `api/receive_online_orders.php` | Endpoint GET: pedidos en línea pendientes |
+| `api/process_payment.php` | Endpoint GET/POST: consulta el cobro y registra efectivo, cambio y ticket (HU9) |
+| `api/receive_online_orders.php` | Endpoint GET: bandeja de pedidos web pendientes (HU7) |
+| `api/manage_online_order.php` | Endpoint POST: acepta o rechaza pedidos web con motivo obligatorio (HU7) |
+| `api/search_pos_customers.php` | Endpoint GET: búsqueda de clientes para captura POS (HU8) |
+| `api/create_pos_order.php` | Endpoint POST: registra pedidos de mostrador o teléfono en estado pendiente (HU8) |
 | `api/PosModel.php` | Modelo POS (PDO) |
+| `ui/pos.php` | Bandeja y captura de pedidos para Vendedor y Cajero |
 | `ui/posUI.js` | UI del POS |
 | `ui/posService.js` | Lógica de servicios del POS |
+| `ui/posOrderUI.js` | Búsqueda de cliente, ticket y captura de pedidos (HU8) |
+
+La vista `/caja` permite cobrar en efectivo los pedidos pendientes o en proceso. Calcula el cambio, registra venta, detalle y pago de forma atómica y genera un ticket imprimible; los pedidos ya pagados no pueden cobrarse de nuevo (HU9).
+
+La bandeja de recepción actualiza los pedidos pendientes automáticamente, avisa visualmente cuando llega uno nuevo y permite activar una alerta sonora. Al aceptar, el pedido pasa a **En Proceso**; al rechazar, se registra el motivo y el estado **Cancelado**, visibles para el cliente en su seguimiento.
 
 ### 5. Logística (`5_logistics`)
 
@@ -172,15 +184,23 @@ docker compose exec web bash
 | `api/get_delivery_route.php` | Endpoint GET: ruta de entrega del día |
 | `api/confirm_delivery.php` | Endpoint POST: marca entrega como completada |
 | `api/LogisticsModel.php` | Modelo de logística (PDO) |
-| `ui/deliveryUI.js` | UI de gestión de entregas |
-| `ui/mapRoutes.js` | Visualización de rutas en mapa |
+| `ui/logistica.php` | Vista móvil de entregas asignadas al repartidor autenticado (HU10) |
+| `ui/deliveryUI.js` | UI de ruta, saldos y confirmación de entrega |
+| `ui/mapRoutes.js` | Enlaces directos de navegación a Google Maps |
+| `ui/logistica.css` | Estilos responsivos de la ruta móvil |
+
+La ruta se filtra en servidor por `id_repartidor`, solo incluye entregas domiciliarias en estado **En Ruta** y registra `fecha_entrega` al confirmar. Para domicilios con geolocalización abre navegación a coordenadas; si no hay coordenadas, abre la dirección como destino.
 
 ### 6. Caja (`6_cash`)
 
 | Archivo | Descripción |
 |---|---|
 | `api/close_cash_register.php` | Endpoint POST: registra cierre de caja |
-| `api/CashModel.php` | Modelo de caja (PDO) |
+| `api/CashModel.php` | Registra venta, partidas y pago en una transacción (PDO) |
+| `ui/caja.php` | Pantalla de cobro en efectivo y ticket imprimible |
+| `ui/cajaService.js` | Cliente de servicios de cobro |
+| `ui/cajaUI.js` | Cálculo de cambio y generación del ticket |
+| `ui/caja.css` | Estilos de Caja e impresión |
 | `ui/cashUI.js` | UI de caja |
 
 ### 7. Reportes (`7_reports`)

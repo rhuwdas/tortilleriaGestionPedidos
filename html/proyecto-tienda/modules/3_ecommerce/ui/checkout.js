@@ -57,6 +57,29 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let carrito = [];
     let tipoEntregaSeleccionado = 'Domicilio';
+
+    function validarHorarioEntrega() {
+        const valorFecha = campoFechaEntrega?.value;
+        const fechaEntrega = valorFecha ? new Date(valorFecha) : null;
+
+        if (!fechaEntrega || Number.isNaN(fechaEntrega.getTime())) {
+            mostrarError('Selecciona una fecha y hora de entrega.');
+            return false;
+        }
+
+        if (fechaEntrega <= new Date()) {
+            mostrarError('La fecha y hora de entrega debe ser futura.');
+            return false;
+        }
+
+        const minutosEntrega = fechaEntrega.getHours() * 60 + fechaEntrega.getMinutes();
+        if (minutosEntrega < 420 || minutosEntrega > 1020) {
+            mostrarError('La hora de entrega debe estar dentro del horario de 07:00 a 17:00.');
+            return false;
+        }
+
+        return true;
+    }
     
     // Mostrar precio unitario al seleccionar producto
     if (selectorProducto) {
@@ -207,6 +230,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 mostrarError('El carrito está vacío');
                 return;
             }
+
+            if (!validarHorarioEntrega()) {
+                return;
+            }
             
             // Llenar lista de productos en modal
             listaResumenModal.innerHTML = '';
@@ -263,6 +290,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Confirmar pedido final
     if (botonConfirmarFinal) {
         botonConfirmarFinal.addEventListener('click', async () => {
+            if (!validarHorarioEntrega()) {
+                return;
+            }
+
             // Preparar datos
             const datosPedido = {
                 items: carrito.map(item => ({
@@ -274,18 +305,28 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             
             if (tipoEntregaSeleccionado === 'Domicilio') {
-                if (selectorDireccionGuardada) {
-                    if (selectorDireccionGuardada.value === 'nueva') {
-                        datosPedido.direccion = {
-                            calle: document.getElementById('campo-direccion-calle')?.value || '',
-                            colonia: document.getElementById('campo-direccion-colonia')?.value || '',
-                            municipio: document.getElementById('campo-direccion-municipio')?.value || '',
-                            codigo_postal: '',
-                            referencia: document.getElementById('campo-direccion-referencia')?.value || ''
-                        };
-                    } else {
-                        datosPedido.id_direccion = selectorDireccionGuardada.value;
+                const usarDireccionGuardada = selectorDireccionGuardada
+                    && selectorDireccionGuardada.value
+                    && selectorDireccionGuardada.value !== 'nueva';
+
+                if (usarDireccionGuardada) {
+                    datosPedido.id_direccion = selectorDireccionGuardada.value;
+                } else {
+                    const calle = document.getElementById('campo-direccion-calle')?.value.trim() || '';
+                    const municipio = document.getElementById('campo-direccion-municipio')?.value.trim() || '';
+
+                    if (!calle || !municipio) {
+                        mostrarError('Captura la calle y el municipio para la entrega a domicilio.');
+                        return;
                     }
+
+                    datosPedido.direccion = {
+                        calle: calle,
+                        colonia: document.getElementById('campo-direccion-colonia')?.value.trim() || '',
+                        municipio: municipio,
+                        codigo_postal: '',
+                        referencia: document.getElementById('campo-direccion-referencia')?.value.trim() || ''
+                    };
                 }
             }
             
@@ -311,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     carrito = [];
                     actualizarCarrito();
                     setTimeout(() => {
-                        window.location.href = '/proyecto-tienda/?ruta=/ecommerce#mis-pedidos';
+                        window.location.href = '/proyecto-tienda/?ruta=/mis-pedidos';
                     }, 2000);
                 } else {
                     mostrarError(resultado.mensaje || 'Error al crear el pedido');
@@ -354,6 +395,107 @@ document.addEventListener('DOMContentLoaded', () => {
         return div.innerHTML;
     }
     
+    /**
+     * Convierte una fecha al formato requerido por un input datetime-local.
+     */
+    function formatearFechaParaInput(fecha) {
+        const fechaAjustada = new Date(fecha.getTime() - fecha.getTimezoneOffset() * 60000);
+        return fechaAjustada.toISOString().slice(0, 16);
+    }
+
+    // Recargar en el carrito los productos de un pedido anterior (HU6 - Repetir pedido)
+    document.addEventListener('pedido:repetir', (evento) => {
+        const pedido = evento.detail?.pedido;
+        if (!pedido || !Array.isArray(pedido.detalles) || pedido.detalles.length === 0) {
+            mostrarError('El pedido seleccionado no tiene productos para repetir.');
+            return;
+        }
+
+        carrito = pedido.detalles.map((detalle) => {
+            const idProducto = Number(detalle.id_producto);
+            const opcionActual = selectorProducto
+                ? Array.from(selectorProducto.options).find((opcion) => Number(opcion.value) === idProducto)
+                : null;
+
+            return {
+                id_producto: idProducto,
+                nombre: opcionActual ? opcionActual.getAttribute('data-nombre') : detalle.nombre,
+                precio_unitario: opcionActual
+                    ? parseFloat(opcionActual.getAttribute('data-precio'))
+                    : Number(detalle.precio_unitario),
+                unidad: opcionActual ? opcionActual.getAttribute('data-unidad') : detalle.unidad,
+                cantidad: Number(detalle.cantidad)
+            };
+        });
+
+        tipoEntregaSeleccionado = pedido.tipo_entrega === 'Recoger en local'
+            ? 'Recoger en local'
+            : 'Domicilio';
+
+        if (tipoEntregaSeleccionado === 'Recoger en local') {
+            if (opcionLocal) opcionLocal.classList.add('seleccionada');
+            if (opcionDomicilio) opcionDomicilio.classList.remove('seleccionada');
+            if (bloqueDireccionEntrega) bloqueDireccionEntrega.style.display = 'none';
+        } else {
+            if (opcionDomicilio) opcionDomicilio.classList.add('seleccionada');
+            if (opcionLocal) opcionLocal.classList.remove('seleccionada');
+            if (bloqueDireccionEntrega) bloqueDireccionEntrega.style.display = 'block';
+        }
+
+        // Conservar la dirección de entrega del pedido anterior cuando sea posible.
+        if (tipoEntregaSeleccionado === 'Domicilio') {
+            const opcionDireccion = selectorDireccionGuardada && pedido.id_direccion
+                ? Array.from(selectorDireccionGuardada.options).find(
+                    (opcion) => Number(opcion.value) === Number(pedido.id_direccion)
+                )
+                : null;
+
+            if (selectorDireccionGuardada && opcionDireccion) {
+                selectorDireccionGuardada.value = opcionDireccion.value;
+                if (formularioNuevaDireccion) formularioNuevaDireccion.classList.add('d-none');
+            } else {
+                if (selectorDireccionGuardada) selectorDireccionGuardada.value = 'nueva';
+                if (formularioNuevaDireccion) formularioNuevaDireccion.classList.remove('d-none');
+
+                const camposDireccion = {
+                    'campo-direccion-calle': pedido.calle,
+                    'campo-direccion-colonia': pedido.colonia,
+                    'campo-direccion-municipio': pedido.municipio,
+                    'campo-direccion-referencia': pedido.referencia
+                };
+
+                Object.entries(camposDireccion).forEach(([idCampo, valor]) => {
+                    const campo = document.getElementById(idCampo);
+                    if (campo && valor !== null && valor !== undefined) {
+                        campo.value = valor;
+                    }
+                });
+            }
+        }
+
+        // Solo se modifica la fecha de entrega; el resto del pedido se conserva.
+        if (campoFechaEntrega) {
+            const fechaSugerida = new Date(Date.now() + 60 * 60 * 1000);
+            campoFechaEntrega.value = formatearFechaParaInput(fechaSugerida);
+            campoFechaEntrega.min = formatearFechaParaInput(new Date());
+        }
+
+        actualizarCarrito();
+        ocultarAlertas();
+    });
+
+    const pedidoPendiente = sessionStorage.getItem('pedidoParaRepetir');
+    if (pedidoPendiente) {
+        sessionStorage.removeItem('pedidoParaRepetir');
+        try {
+            document.dispatchEvent(new CustomEvent('pedido:repetir', {
+                detail: { pedido: JSON.parse(pedidoPendiente) }
+            }));
+        } catch {
+            mostrarError('No se pudo recuperar el pedido seleccionado.');
+        }
+    }
+
     // Inicializar
     if (bloqueDireccionEntrega) bloqueDireccionEntrega.style.display = 'block';
     actualizarCarrito();

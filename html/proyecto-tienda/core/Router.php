@@ -39,6 +39,7 @@ class Router
         '/logout'     => 'modules/1_auth/api/logout.php',
         '/catalogo'   => 'modules/2_catalog/ui/catalogo.php',
         '/ecommerce'  => 'modules/3_ecommerce/ui/tienda.php',
+        '/mis-pedidos' => 'modules/3_ecommerce/ui/mis_pedidos.php',
         '/pos'        => 'modules/4_pos/ui/pos.php',
         '/logistica'  => 'modules/5_logistics/ui/logistica.php',
         '/caja'       => 'modules/6_cash/ui/caja.php',

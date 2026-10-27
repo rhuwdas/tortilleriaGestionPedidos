@@ -81,6 +81,12 @@ $nombreUsuario = htmlspecialchars($_SESSION['nombre'] ?? 'Cliente', ENT_QUOTES, 
 
         <!-- Saludo + logout -->
         <div class="d-flex align-items-center gap-3">
+            <a href="/proyecto-tienda/?ruta=/catalogo" class="btn btn-sm btn-outline-claro">
+                <i class="bi bi-grid me-1"></i>Ver Catálogo
+            </a>
+            <a href="/proyecto-tienda/?ruta=/ecommerce" id="enlace-mis-pedidos" class="btn btn-sm btn-outline-claro">
+                <i class="bi bi-clock-history me-1"></i>Compra
+            </a>
             <span class="navbar-saludo">
                 <i class="bi bi-person-circle me-1"></i><?= $nombreUsuario ?>
             </span>
@@ -96,17 +102,6 @@ $nombreUsuario = htmlspecialchars($_SESSION['nombre'] ?? 'Cliente', ENT_QUOTES, 
      ══════════════════════════════════════════════════════════════════════════ -->
 <section class="barra-filtros" aria-label="Filtros del catálogo">
     <div class="container-fluid px-4 d-flex align-items-center flex-wrap gap-3">
-
-        <!-- Selector de categoría -->
-        <div class="d-flex align-items-center gap-2">
-            <label for="selectCategoria" class="filtro-etiqueta mb-0">
-                <i class="bi bi-tag me-1"></i>Categoría
-            </label>
-            <select id="selectCategoria" class="form-select form-select-sm filtro-select" aria-label="Filtrar por categoría">
-                <option value="">Todas</option>
-                <!-- Poblado dinámicamente por catalogUI.js -->
-            </select>
-        </div>
 
         <!-- Toggle solo disponibles -->
         <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">

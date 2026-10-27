@@ -22,7 +22,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 if (!empty($_SESSION['id_usuario'])) {
-    header('Location: /proyecto-tienda/?ruta=/dashboard');
+    if (isset($_SESSION['rol']) && strtolower($_SESSION['rol']) === 'cliente') {
+        header('Location: /proyecto-tienda/?ruta=/catalogo');
+    } else {
+        header('Location: /proyecto-tienda/?ruta=/dashboard');
+    }
     exit;
 }
 ?>
@@ -105,19 +109,20 @@ if (!empty($_SESSION['id_usuario'])) {
                         Usuario / Correo electrónico
                     </label>
                     <input
-                        type="email"
+                        type="text"
                         id="campo-correo"
                         name="correo"
                         class="form-control"
-                        placeholder="usuario@correo.com"
+                        placeholder="usuario@correo.com o tu usuario"
                         maxlength="150"
                         required
                         aria-required="true"
                         aria-describedby="error-correo"
+                        autocomplete="username"
                     >
                     <!-- Mensaje de validación para correo vacío -->
                     <div id="error-correo" class="invalid-feedback">
-                        El correo electrónico es obligatorio.
+                        El usuario o correo electrónico es obligatorio.
                     </div>
                 </div>
 

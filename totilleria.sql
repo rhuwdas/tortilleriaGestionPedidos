@@ -254,6 +254,7 @@ CREATE TABLE `pedido` (
   `id_direccion` int DEFAULT NULL,
   `motivo_rechazo` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `fecha_aceptacion` datetime DEFAULT NULL,
+  `fecha_entrega` datetime DEFAULT NULL,
   `fecha_cancelacion` datetime DEFAULT NULL,
   `id_empleado_atiende` int DEFAULT NULL,
   `canal` enum('Web','Mostrador','Teléfono') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Web',
@@ -393,6 +394,7 @@ INSERT INTO `recuperacion_password` (`id_recuperacion`, `email`, `codigo`, `expi
 
 CREATE TABLE `repartidor` (
   `id_repartidor` int NOT NULL,
+  `id_empleado` int DEFAULT NULL,
   `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `apellidos` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `telefono` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -426,7 +428,8 @@ CREATE TABLE `rol` (
 INSERT INTO `rol` (`id_rol`, `rol`) VALUES
 (1, 'Administrador'),
 (2, 'Vendedor'),
-(3, 'Cajero');
+(3, 'Cajero'),
+(4, 'Repartidor');
 
 -- --------------------------------------------------------
 
@@ -643,7 +646,8 @@ ALTER TABLE `recuperacion_password`
 -- Indices de la tabla `repartidor`
 --
 ALTER TABLE `repartidor`
-  ADD PRIMARY KEY (`id_repartidor`);
+  ADD PRIMARY KEY (`id_repartidor`),
+  ADD UNIQUE KEY `uq_repartidor_empleado` (`id_empleado`);
 
 --
 -- Indices de la tabla `rol`
@@ -739,7 +743,7 @@ ALTER TABLE `repartidor`
 -- AUTO_INCREMENT de la tabla `rol`
 --
 ALTER TABLE `rol`
-  MODIFY `id_rol` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_rol` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `venta`
@@ -843,6 +847,10 @@ ALTER TABLE `pedido`
   ADD CONSTRAINT `fk_pedido_direccion` FOREIGN KEY (`id_direccion`) REFERENCES `direccion` (`id_direccion`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_pedido_empleado` FOREIGN KEY (`id_empleado`) REFERENCES `empleado` (`id_empleado`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_pedido_repartidor` FOREIGN KEY (`id_repartidor`) REFERENCES `repartidor` (`id_repartidor`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- Filtros para la tabla `repartidor`
+ALTER TABLE `repartidor`
+  ADD CONSTRAINT `fk_repartidor_empleado` FOREIGN KEY (`id_empleado`) REFERENCES `empleado` (`id_empleado`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `producto_materiaprima`

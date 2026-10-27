@@ -1,0 +1,166 @@
+:root {
+	--tinta-caja: #24342f;
+	--verde-caja: #276749;
+	--terracota-caja: #a64c32;
+	--fondo-caja: #f3f5f2;
+	--borde-caja: #d7dfd9;
+}
+
+* { box-sizing: border-box; }
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	background: var(--fondo-caja);
+	color: var(--tinta-caja);
+	font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.barra-caja {
+	background: var(--tinta-caja);
+	color: #fff;
+	padding: 14px 0;
+}
+
+.contenido-caja { max-width: 1320px; }
+
+.barra-caja .contenido-caja { padding-top: 0; padding-bottom: 0; }
+
+.marca-caja,
+.usuario-caja {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	color: inherit;
+}
+
+.marca-caja { text-decoration: none; font-weight: 700; }
+
+.pagina-caja { padding: 34px 24px 56px; }
+
+.encabezado-caja {
+	display: flex;
+	justify-content: space-between;
+	align-items: end;
+	gap: 16px;
+	margin-bottom: 24px;
+	padding-bottom: 18px;
+	border-bottom: 1px solid var(--borde-caja);
+}
+
+.encabezado-caja h1 { margin: 0; font-size: 1.8rem; font-weight: 750; }
+
+.sobrelinea-caja {
+	margin: 0 0 6px;
+	color: var(--terracota-caja);
+	font-size: 0.75rem;
+	font-weight: 800;
+}
+
+.panel-caja {
+	padding: 22px;
+	background: #fff;
+	border: 1px solid var(--borde-caja);
+	border-radius: 6px;
+}
+
+.resumen-encabezado {
+	display: flex;
+	align-items: start;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 14px;
+}
+
+.resumen-encabezado h2,
+.panel-pago h2 { margin: 0; font-size: 1.2rem; font-weight: 750; }
+
+.estado-caja {
+	padding: 4px 8px;
+	background: #fff3cd;
+	border-radius: 4px;
+	font-size: 0.8rem;
+	font-weight: 700;
+}
+
+.datos-cliente-caja {
+	padding: 10px 12px;
+	margin-bottom: 14px;
+	background: #f4f7f4;
+	border-left: 3px solid var(--verde-caja);
+}
+
+.datos-cliente-caja p { margin: 3px 0; font-size: 0.9rem; }
+
+.tabla-cobro th { color: #64736c; font-size: 0.8rem; }
+.tabla-cobro td { vertical-align: middle; }
+
+.total-cobro,
+.resultado-cambio {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+	padding-top: 14px;
+	border-top: 2px solid var(--borde-caja);
+	font-size: 1.1rem;
+}
+
+.total-cobro strong { font-size: 1.35rem; }
+
+.panel-pago h2 { margin-bottom: 22px; }
+
+.resultado-cambio { margin-top: 18px; color: var(--verde-caja); }
+.resultado-cambio strong { font-size: 1.5rem; }
+
+.aviso-faltante {
+	padding: 10px 12px;
+	margin: 12px 0 0;
+	background: #fee2e2;
+	border-left: 3px solid #b91c1c;
+	color: #991b1b;
+	font-weight: 650;
+}
+
+.ticket-impresion {
+	width: min(100%, 380px);
+	margin: 24px auto;
+	padding: 22px;
+	background: #fff;
+	border: 1px solid #d5d5d5;
+	color: #111;
+	font-family: "Courier New", monospace;
+	font-size: 0.84rem;
+}
+
+.ticket-negocio { text-align: center; font-size: 1.05rem; font-weight: 800; }
+.ticket-subtitulo,.ticket-gracias { text-align: center; }
+.ticket-separador { border-top: 1px dashed #555; margin: 12px 0; }
+.ticket-impresion p { margin: 5px 0; }
+.ticket-impresion table { width: 100%; }
+.ticket-impresion th:last-child,.ticket-impresion td:last-child { text-align: right; }
+.ticket-linea { display: flex; justify-content: space-between; gap: 12px; margin: 5px 0; }
+.ticket-gracias { margin-top: 18px !important; }
+
+@media print {
+	@page { margin: 8mm; }
+	body * { visibility: hidden !important; }
+	#ticket-impresion,
+	#ticket-impresion * { visibility: visible !important; }
+	#ticket-impresion {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 72mm;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+	.no-imprimir { display: none !important; }
+}
+
+@media (max-width: 600px) {
+	.pagina-caja { padding: 24px 14px 40px; }
+	.encabezado-caja { align-items: start; flex-direction: column; }
+	.usuario-caja { font-size: 0.85rem; }
+}

@@ -1,0 +1,357 @@
+:root {
+    --color-tinta: #24342f;
+    --color-terra: #a64c32;
+    --color-fondo: #f3f5f2;
+    --color-borde: #d7dfd9;
+    --color-verde: #276749;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--color-fondo);
+    color: var(--color-tinta);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.barra-superior {
+    padding: 14px 0;
+    background: var(--color-tinta);
+    color: #fff;
+}
+
+.marca,
+.usuario-activo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: inherit;
+}
+
+.marca {
+    gap: 10px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.marca i {
+    color: #e7a25b;
+    font-size: 1.35rem;
+}
+
+.usuario-activo {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    font-size: 0.875rem;
+}
+
+.contenido-bandeja {
+    max-width: 1440px;
+    padding: 36px 24px 56px;
+}
+
+.selector-vista-pos {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--color-borde);
+}
+
+.boton-vista-pos {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 8px 14px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: #607068;
+    font-weight: 650;
+}
+
+.boton-vista-pos.activo {
+    border-bottom-color: var(--color-terra);
+    color: var(--color-terra);
+}
+
+.encabezado-bandeja {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--color-borde);
+}
+
+.sobrelinea {
+    margin: 0 0 6px;
+    color: var(--color-terra);
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.encabezado-bandeja h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 750;
+}
+
+.texto-actualizacion {
+    margin: 8px 0 0;
+    color: #65756e;
+    font-size: 0.875rem;
+}
+
+.controles-bandeja,
+.pedido-encabezado,
+.pedido-acciones,
+.acciones-dialogo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.controles-bandeja {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.contador-pedidos {
+    padding: 8px 12px;
+    background: #e3ebe5;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.contador-pedidos span {
+    color: var(--color-verde);
+}
+
+.lista-pedidos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+    align-items: start;
+    gap: 14px;
+}
+
+.pedido-entrante {
+    min-width: 0;
+    padding: 18px;
+    background: #fff;
+    border: 1px solid var(--color-borde);
+    border-left: 4px solid #d38b48;
+    border-radius: 6px;
+}
+
+.pedido-encabezado {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.pedido-encabezado h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 750;
+}
+
+.etiqueta-entrega {
+    padding: 4px 8px;
+    background: #edf2ee;
+    border-radius: 4px;
+    color: var(--color-verde);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.etiqueta-canal {
+    padding: 4px 8px;
+    background: #e8edf2;
+    border-radius: 4px;
+    color: #3d5365;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.etiqueta-estado-pedido {
+    padding: 4px 8px;
+    background: #fff3cd;
+    border-radius: 4px;
+    color: #775600;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.panel-pedido-pos {
+    padding: 18px;
+    margin-bottom: 16px;
+    background: #fff;
+    border: 1px solid var(--color-borde);
+    border-radius: 6px;
+}
+
+.panel-pedido-pos h2 {
+    margin: 0 0 14px;
+    font-size: 1.1rem;
+    font-weight: 750;
+}
+
+.resultados-clientes {
+    position: relative;
+    z-index: 2;
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid var(--color-borde);
+    border-top: 0;
+}
+
+.resultado-cliente {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-bottom: 1px solid #e8ece9;
+    background: #fff;
+    color: var(--color-tinta);
+    text-align: left;
+}
+
+.resultado-cliente:hover,
+.resultado-cliente:focus-visible {
+    background: #f0f5f1;
+}
+
+.resultado-cliente-vacio,
+.cliente-seleccionado {
+    padding: 10px 12px;
+    margin: 0;
+    background: #f0f5f1;
+    color: var(--color-tinta);
+}
+
+.cliente-seleccionado {
+    margin-top: 10px;
+    border-left: 3px solid var(--color-verde);
+    font-weight: 650;
+}
+
+.tabla-ticket-pos td {
+    vertical-align: middle;
+}
+
+.total-ticket-pos {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 12px;
+    border-top: 2px solid var(--color-borde);
+    font-size: 1.15rem;
+}
+
+.total-ticket-pos strong {
+    color: var(--color-verde);
+}
+
+.pedido-datos p,
+.pedido-total {
+    margin: 5px 0;
+    overflow-wrap: anywhere;
+    font-size: 0.9rem;
+}
+
+.pedido-datos strong {
+    color: #56665f;
+}
+
+.pedido-productos {
+    margin: 14px 0 10px;
+    padding: 12px 12px 12px 32px;
+    background: #f6f8f6;
+    border-top: 1px solid #e6ebe7;
+    border-bottom: 1px solid #e6ebe7;
+    font-size: 0.875rem;
+}
+
+.pedido-productos li + li {
+    margin-top: 5px;
+}
+
+.pedido-total {
+    text-align: right;
+    font-size: 1rem;
+    font-weight: 750;
+}
+
+.pedido-acciones {
+    justify-content: flex-end;
+    margin-top: 14px;
+}
+
+.bandeja-vacia,
+.bandeja-cargando {
+    grid-column: 1 / -1;
+    padding: 48px 20px;
+    margin: 0;
+    color: #64736c;
+    text-align: center;
+}
+
+.dialogo-rechazo {
+    width: min(100% - 32px, 480px);
+    padding: 24px;
+    border: 1px solid var(--color-borde);
+    border-radius: 8px;
+}
+
+.dialogo-rechazo::backdrop {
+    background: rgb(20 30 25 / 55%);
+}
+
+.dialogo-rechazo h2 {
+    margin: 0 0 18px;
+    font-size: 1.2rem;
+}
+
+.acciones-dialogo {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-top: 18px;
+}
+
+@media (max-width: 640px) {
+    .contenido-bandeja {
+        padding: 24px 16px 40px;
+    }
+
+    .encabezado-bandeja {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .controles-bandeja {
+        justify-content: flex-start;
+    }
+
+    .usuario-activo {
+        font-size: 0.8rem;
+    }
+
+    .pedido-acciones > .btn {
+        flex: 1;
+    }
+
+    .boton-vista-pos {
+        flex: 1;
+        justify-content: center;
+        padding-inline: 8px;
+        font-size: 0.85rem;
+    }
+}

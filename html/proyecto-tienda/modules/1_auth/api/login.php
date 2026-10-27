@@ -61,9 +61,11 @@ const MENSAJE_CREDENCIALES_INVALIDAS = 'Correo o contraseña incorrectos.';
  *  Los valores deben coincidir exactamente con la columna 'rol' de la tabla rol. */
 const RUTAS_POR_ROL = [
     'Administrador' => '/proyecto-tienda/?ruta=/dashboard',
-    'Vendedor'      => '/proyecto-tienda/?ruta=/dashboard',
-    'Cajero'        => '/proyecto-tienda/?ruta=/dashboard',
+    'Vendedor'      => '/proyecto-tienda/?ruta=/pos',
+    'Cajero'        => '/proyecto-tienda/?ruta=/pos',
+    'Repartidor'    => '/proyecto-tienda/?ruta=/logistica',
     'cliente'       => '/proyecto-tienda/?ruta=/catalogo',
+    'Cliente'       => '/proyecto-tienda/?ruta=/catalogo',
 ];
 
 /** Ruta de redirección por defecto si el rol no está mapeado. */
@@ -134,13 +136,31 @@ $contrasenaEntrada = $datos['contrasena']; // No hacer trim a la contraseña (pu
 try {
     $modeloAuth = new AuthModel();
 
-    // Paso 1: Buscar al usuario por correo electrónico (PDO prepared statement)
-    $usuario = $modeloAuth->buscarPorCorreo($correoEntrada);
+    // Paso 1: Buscar al usuario en la tabla empleado y en la tabla cliente
+    $empleado = $modeloAuth->buscarEmpleado($correoEntrada);
+    $cliente  = $modeloAuth->buscarCliente($correoEntrada);
 
-    // Paso 2: Verificar existencia del usuario Y la contraseña en una sola condición.
-    // Se usa password_verify() para comparar contra el hash almacenado.
+    $usuario = null;
+
+    // Paso 2: Verificar la contraseña contra las cuentas encontradas
+    // Se valida primero contra empleado; si no coincide o no existe, contra cliente.
+    if (
+        $empleado !== null 
+        && !empty($empleado['contrasena_hash']) 
+        && password_verify($contrasenaEntrada, $empleado['contrasena_hash'])
+    ) {
+        $usuario = $empleado;
+    } elseif (
+        $cliente !== null 
+        && !empty($cliente['contrasena_hash']) 
+        && password_verify($contrasenaEntrada, $cliente['contrasena_hash'])
+    ) {
+        $usuario = $cliente;
+    }
+
+    // Si las credenciales no coinciden con ninguna cuenta encontrada (empleado o cliente)
     // IMPORTANTE: el mensaje de error es genérico para no revelar cuál campo falló (HU1).
-    if ($usuario === null || !password_verify($contrasenaEntrada, $usuario['contrasena_hash'])) {
+    if ($usuario === null) {
         http_response_code(401); // Unauthorized
         responderJson(false, MENSAJE_CREDENCIALES_INVALIDAS);
     }
@@ -151,6 +171,16 @@ try {
         responderJson(false, 'Tu cuenta está desactivada. Contacta al administrador.');
     }
 
+    if ($usuario['rol'] === 'Repartidor' && empty($usuario['id_repartidor'])) {
+        http_response_code(403);
+        responderJson(false, 'La cuenta de repartidor todavía no está vinculada a un registro de repartidor.');
+    }
+
+    // Paso 4: Si es empleado, actualizar la fecha/hora de último login
+    if ($usuario['tipo_usuario'] === 'empleado') {
+        $modeloAuth->actualizarUltimoLoginEmpleado((int)$usuario['id']);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Autenticación exitosa: crear sesión y redirigir por rol (tarea 1.5)
     // ─────────────────────────────────────────────────────────────────────────
@@ -158,14 +188,28 @@ try {
     // Regenerar el ID de sesión para prevenir ataques de fijación de sesión
     session_regenerate_id(true);
 
-    // Almacenar datos mínimos del usuario en la sesión (sin contraseña)
-    $_SESSION['id_usuario'] = (int)$usuario['id'];
-    $_SESSION['nombre']     = $usuario['nombre'];
-    $_SESSION['correo']     = $usuario['correo'];
-    $_SESSION['rol']        = $usuario['rol'];
+    // Almacenar datos en la sesión (sin contraseñas)
+    $_SESSION['id_usuario']     = (int)$usuario['id'];
+    $_SESSION['nombre']         = $usuario['nombre'];
+    $_SESSION['nombre_usuario'] = trim($usuario['nombre'] . ' ' . ($usuario['apellidos'] ?? ''));
+    $_SESSION['correo']         = $usuario['correo'];
+    $_SESSION['email_usuario']  = $usuario['correo'];
+    $_SESSION['rol']            = $usuario['rol'];
+    $_SESSION['tipo_usuario']   = $usuario['tipo_usuario'];
+
+    unset($_SESSION['id_cliente'], $_SESSION['id_empleado'], $_SESSION['id_repartidor']);
+    if ($usuario['tipo_usuario'] === 'cliente') {
+        $_SESSION['id_cliente'] = (int)$usuario['id'];
+    } else {
+        $_SESSION['id_empleado'] = (int)$usuario['id'];
+        if ($usuario['rol'] === 'Repartidor') {
+            $_SESSION['id_repartidor'] = (int)$usuario['id_repartidor'];
+        }
+    }
 
     // Determinar la URL de redirección según el rol del usuario
-    $redireccion = RUTAS_POR_ROL[$usuario['rol']] ?? RUTA_DEFAULT;
+    $redireccion = RUTAS_POR_ROL[$usuario['rol']] 
+        ?? (($usuario['tipo_usuario'] === 'cliente') ? '/proyecto-tienda/?ruta=/catalogo' : RUTA_DEFAULT);
 
     // Responder con éxito y la URL de redirección
     http_response_code(200);
