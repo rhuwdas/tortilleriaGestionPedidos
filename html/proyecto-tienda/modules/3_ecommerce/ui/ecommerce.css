@@ -1,0 +1,209 @@
+/*
+ * modules/3_ecommerce/ui/ecommerce.css
+ *
+ * Estilos visuales para el módulo de compras y pedidos en línea (HU5 y HU6).
+ * Paleta corporativa Azul y Verde Oliva:
+ *  - Primario: #1a56a0 (Hover: #154a8a)
+ *  - Secundario / Acento: #16A34A
+ *  - Superficie de fondo: #f4f6f9
+ *  - Tarjetas y contenedores: #FFFFFF
+ *  - Alertas y errores: #DC2626 (Fondo: #FEE2E2)
+ */
+
+:root {
+    --color-primario: #1a56a0;
+    --color-primario-hover: #154a8a;
+    --color-secundario: #16A34A;
+    --color-texto-oscuro: #2c3e50;
+    --color-texto-atenuado: #6c757d;
+    --color-borde: #dee2e6;
+    --color-fondo: #f4f6f9;
+    --color-blanco: #ffffff;
+    --color-error: #DC2626;
+    --color-fondo-error: #FEE2E2;
+    --radio-tarjeta: 10px;
+    --radio-boton: 6px;
+    --sombra-tarjeta: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+}
+
+body {
+    background-color: var(--color-fondo);
+    color: var(--color-texto-oscuro);
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    min-height: 100vh;
+}
+
+/* Barra de navegación superior */
+.navbar-ecommerce {
+    background-color: var(--color-primario);
+    color: var(--color-blanco);
+    padding: 0.85rem 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-ecommerce a {
+    color: var(--color-blanco);
+    text-decoration: none;
+}
+
+.marca-ecommerce {
+    font-size: 1.25rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Tarjeta y paneles principales */
+.tarjeta-panel {
+    background-color: var(--color-blanco);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-tarjeta);
+    box-shadow: var(--sombra-tarjeta);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.titulo-panel {
+    color: var(--color-primario);
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Opciones de tipo de entrega (selector tipo tarjeta) */
+.contenedor-tipo-entrega {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.opcion-entrega {
+    border: 2px solid var(--color-borde);
+    border-radius: var(--radio-tarjeta);
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background-color: var(--color-blanco);
+}
+
+.opcion-entrega:hover {
+    border-color: #93c5fd;
+    background-color: #f8fafc;
+}
+
+.opcion-entrega.seleccionada {
+    border-color: var(--color-primario);
+    background-color: #eff6ff;
+}
+
+.icono-tipo-entrega {
+    font-size: 1.75rem;
+    color: var(--color-primario);
+}
+
+.texto-tipo-entrega h6 {
+    margin: 0;
+    font-weight: 700;
+    color: var(--color-texto-oscuro);
+}
+
+.texto-tipo-entrega small {
+    color: var(--color-texto-atenuado);
+    display: block;
+}
+
+/* Tabla del carrito */
+.tabla-carrito {
+    margin-bottom: 0;
+}
+
+.tabla-carrito th {
+    background-color: #f1f5f9;
+    color: var(--color-texto-oscuro);
+    font-weight: 600;
+    border-top: none;
+    font-size: 13px;
+}
+
+.tabla-carrito td {
+    vertical-align: middle;
+    font-size: 14px;
+}
+
+.precio-unitario-insignia {
+    color: var(--color-secundario);
+    font-weight: 700;
+}
+
+/* Resumen del pedido */
+.resumen-totales {
+    background-color: #f8fafc;
+    border-radius: 8px;
+    padding: 1.25rem;
+    border: 1px solid var(--color-borde);
+}
+
+.fila-resumen {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 14px;
+}
+
+.fila-total {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 2px solid var(--color-borde);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-primario);
+}
+
+/* Botones principales */
+.btn-accion-pedido {
+    background-color: var(--color-primario);
+    border-color: var(--color-primario);
+    color: #ffffff;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radio-boton);
+    width: 100%;
+    font-size: 1rem;
+    transition: background-color 0.2s ease;
+}
+
+.btn-accion-pedido:hover:not(:disabled) {
+    background-color: var(--color-primario-hover);
+    border-color: var(--color-primario-hover);
+    color: #ffffff;
+}
+
+.btn-accion-pedido:disabled {
+    background-color: #93c5fd;
+    border-color: #93c5fd;
+    cursor: not-allowed;
+}
+
+/* Notificación y errores */
+.alerta-pedido {
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    font-size: 14px;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .contenedor-tipo-entrega {
+        grid-template-columns: 1fr;
+    }
+}
